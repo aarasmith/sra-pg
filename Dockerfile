@@ -12,7 +12,7 @@ RUN set -x && \
     TEMP_PACKAGES=() && \
     KEPT_PACKAGES=() && \
     # Packages only required during build
-    TEMP_PACKAGES+=(git) && \
+    KEPT_PACKAGES+=(git) && \
     TEMP_PACKAGES+=(make) && \
     TEMP_PACKAGES+=(pandoc) && \
     # Packages kept in the image
