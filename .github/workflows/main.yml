@@ -16,8 +16,12 @@ jobs:
             DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
           run: |
             docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-        - name: Build the Docker image
-          run: docker build . --file Dockerfile --tag latest
-        
-        - name: Docker Push
-          run: docker push ${{secrets.DOCKER_USER}}/sra-pg:latest
+        - name: Build and push
+          id: docker_build
+          uses: docker/build-push-action@v2
+          with:
+            context: .
+            push: true
+            tags: |
+              ${{secrets.DOCKER_USER}}/sra-pg:$(date +%s)
+              ${{secrets.DOCKER_USER}}/sra-pg:latest
