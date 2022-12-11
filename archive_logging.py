@@ -10,6 +10,7 @@ import logging
 from kafka_logger.handlers import KafkaLoggingHandler
 import configparser
 import sys
+import re
 
 class StreamToLogger(object):
     """
@@ -46,13 +47,16 @@ def create_kafka_logger(topic_name, logger_name, config_file = 'connection.confi
     
     logger.setLevel(logging.DEBUG)
     
-    # sl = StreamToLogger(logger, logging.INFO)
-    # sys.stdout = sl
-    
     logger.addHandler(kafka_handler_obj)
+    
+    logger.addFilter(progress_filter())
     
     return(logger)
 
 def add_stdout(logger):
     sl = StreamToLogger(logger, logging.INFO)
     sys.stdout = sl
+
+class progress_filter(logging.Filter):
+    def filter(self, record):
+        return not bool(re.search("download]\s*\d+\.*\d*%.*ETA", record.msg))
