@@ -30,7 +30,7 @@ def download_videos(links_df):
                     ydl.download([url])
             except BaseException as ex:
                 ex_type, ex_value = sys.exc_info()[0:2]
-                error = (entry.id, ex_type.__name__, ex_value.msg)
+                error = (entry.id, ex_type.__name__, str(ex_value))
                 cursor.execute("INSERT INTO errors VALUES (%s, %s, %s)", error)
                 con.commit()
             else:
