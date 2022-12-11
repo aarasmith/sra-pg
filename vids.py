@@ -34,7 +34,7 @@ def download_videos(links_df):
                 cursor.execute("INSERT INTO errors VALUES (%s, %s, %s)", error)
                 con.commit()
             else:
-                cursor.execute("INSERT INTO downloaded VALUES (%s)", tuple(entry.id))
+                cursor.execute("INSERT INTO downloaded VALUES (%s)", (entry.id,))
                 con.commit()
 
 
