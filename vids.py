@@ -12,7 +12,7 @@ import sys
 import time
 
 def download_videos(links_df):
-    
+    proj_path = ""
     with db.get_connection("conflictfootage") as con:
         cursor = con.cursor()   
         for i in list(range(0, len(links_df), 1)):
@@ -39,7 +39,7 @@ def download_videos(links_df):
 
 
 def wrapper(links_df):
-        
+    proj_path = ""    
     if len(links_df) > 0:
         
         download_videos(links_df)
