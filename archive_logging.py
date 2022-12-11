@@ -49,7 +49,9 @@ def create_kafka_logger(topic_name, logger_name = 'STDOUT', config_file = 'conne
     # sl = StreamToLogger(logger, logging.INFO)
     # sys.stdout = sl
     
-    return logger.addHandler(kafka_handler_obj)
+    logger.addHandler(kafka_handler_obj)
+    
+    return(logger)
 
 def add_stdout(logger):
     sl = StreamToLogger(logger, logging.INFO)
