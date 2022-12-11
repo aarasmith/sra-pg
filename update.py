@@ -13,7 +13,7 @@ import logging
 
 def main_function():
     logger = archive_logging.create_kafka_logger(topic_name = 'archive_log')
-    add_stdout(logger)
+    archive_logging.add_stdout(logger)
     
     proj_path = ""
     
