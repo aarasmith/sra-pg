@@ -10,6 +10,7 @@ import db
 from yt_dlp import YoutubeDL
 import sys
 import time
+import archive_logging
 
 def download_videos(links_df):
     proj_path = ""
@@ -23,7 +24,8 @@ def download_videos(links_df):
                 "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "outtmpl": f"{file_name}.mp4",
                 "cookiefile": "yt_cookies.txt",
-                "noplaylist": True
+                "noplaylist": True,
+                "logger": archive_logging.create_kafka_logger(topic_name = 'archive_logger')
                 }
             try:
                 with YoutubeDL(ydl_opts) as ydl:
