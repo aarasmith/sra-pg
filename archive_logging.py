@@ -28,7 +28,7 @@ class StreamToLogger(object):
         pass
 
 
-def create_kafka_logger(topic_name, logger_name = 'STDOUT', config_file = 'connection.config'):
+def create_kafka_logger(topic_name, logger_name, config_file = 'connection.config'):
     
     config = configparser.ConfigParser()
     config.read(config_file)

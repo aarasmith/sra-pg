@@ -25,7 +25,7 @@ def download_videos(links_df):
                 "outtmpl": f"{file_name}.mp4",
                 "cookiefile": "yt_cookies.txt",
                 "noplaylist": True,
-                "logger": archive_logging.create_kafka_logger(topic_name = 'archive_logger')
+                "logger": archive_logging.create_kafka_logger(topic_name = 'archive_logger', logger_name = entry.id)
                 }
             try:
                 with YoutubeDL(ydl_opts) as ydl:
