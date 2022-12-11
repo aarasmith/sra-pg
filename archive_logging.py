@@ -28,7 +28,7 @@ class StreamToLogger(object):
         pass
 
 
-def create_kafka_logger(logger_name = 'STDOUT', config_file = 'connection.config'):
+def create_kafka_logger(topic_name, logger_name = 'STDOUT', config_file = 'connection.config'):
     
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -36,7 +36,7 @@ def create_kafka_logger(logger_name = 'STDOUT', config_file = 'connection.config
     config_tag = 'KAFKA'
     
     bootstrap_server = config[config_tag]['BOOTSTRAP_SERVER']
-    topic_name = config[config_tag]['TOPIC_NAME']
+    #topic_name = config[config_tag]['TOPIC_NAME']
     
     logger = logging.getLogger(logger_name)
     
@@ -46,7 +46,11 @@ def create_kafka_logger(logger_name = 'STDOUT', config_file = 'connection.config
     
     logger.setLevel(logging.DEBUG)
     
-    sl = StreamToLogger(logger, logging.INFO)
-    sys.stdout = sl
+    # sl = StreamToLogger(logger, logging.INFO)
+    # sys.stdout = sl
     
     return logger.addHandler(kafka_handler_obj)
+
+def add_stdout(logger):
+    sl = StreamToLogger(logger, logging.INFO)
+    sys.stdout = sl
