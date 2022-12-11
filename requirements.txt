@@ -2,7 +2,7 @@ yt-dlp
 pdfkit
 pandas
 bs4
-kafka
+kafka-python
 kafka-logging-handler
 configparser
 psycopg2-binary
