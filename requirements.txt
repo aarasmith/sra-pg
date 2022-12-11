@@ -5,3 +5,4 @@ bs4
 kafka
 kafka-logging-handler
 configparser
+psycopg2-binary
