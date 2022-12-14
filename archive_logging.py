@@ -12,7 +12,7 @@ import configparser
 import sys
 import re
 
-class StreamToLogger(object):
+class StreamToLogger(object): #deprecated
     """
     Fake file-like stream object that redirects writes to a logger instance.
     """
@@ -29,7 +29,7 @@ class StreamToLogger(object):
         pass
 
 
-def create_kafka_logger(topic_name, logger_name, config_file = 'connection.config'):
+def create_kafka_logger(topic_name, logger_name, config_file = 'connection.config', exclude_progress = True):
     
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -49,11 +49,12 @@ def create_kafka_logger(topic_name, logger_name, config_file = 'connection.confi
     
     logger.addHandler(kafka_handler_obj)
     
-    logger.addFilter(progress_filter())
+    if exclude_progress:
+        logger.addFilter(progress_filter())
     
     return(logger)
 
-def add_stdout(logger):
+def add_stdout(logger): #deprecated
     sl = StreamToLogger(logger, logging.INFO)
     sys.stdout = sl
 
