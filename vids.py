@@ -7,44 +7,52 @@ Created on Sun Dec 11 14:47:05 2022
 """
 
 import db
-from yt_dlp import YoutubeDL
+from yt_dlp import YoutubeDL, DownloadError
 import sys
 import time
 import archive_logging
 
-def download_videos(links_df):
-    proj_path = ""
-    with db.get_connection("conflictfootage") as con:
-        cursor = con.cursor()   
+def download_videos(links_df, subreddit, save_path):
+    #db connection only necessary for legacy logs
+    with db.get_connection(subreddit) as con:
+        cursor = con.cursor()
+        #iterate over all links and log yt-dlp output with the post id as the log identifier
+        #non-yt-dlp errors should be the only logs that get logged at the INFO level. yt-dlp info gets sent to debug
         for i in list(range(0, len(links_df), 1)):
             entry = links_df.iloc[i]
             url = entry.url
-            file_name = proj_path + "cf_vids/" + entry.id
+            file_name = save_path + "cf_vids/" + entry.id
+            logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
             ydl_opts = {
                 "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "outtmpl": f"{file_name}.mp4",
                 "cookiefile": "yt_cookies.txt",
                 "noplaylist": True,
-                "logger": archive_logging.create_kafka_logger(topic_name = 'archive_logger', logger_name = entry.id)
+                "logger": logger
                 }
             try:
                 with YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
-            except BaseException as ex:
+            #legacy logs - when passing a logger object to ydl_opts this stuff all gets logged and sent to kafka
+            except DownloadError as ex:
                 ex_type, ex_value = sys.exc_info()[0:2]
                 error = (entry.id, ex_type.__name__, str(ex_value))
-                cursor.execute("INSERT INTO errors VALUES (%s, %s, %s)", error)
+                cursor.execute("INSERT INTO errors VALUES (%s, %s, %s) ON CONFLICT (id) DO NOTHING", error)
                 con.commit()
+            #non-yt-dlp errors
+            except BaseException as ex:
+                logger.info(f'[{type(ex)}] {ex[0]}')
             else:
-                cursor.execute("INSERT INTO downloaded VALUES (%s)", (entry.id,))
+                cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
                 con.commit()
 
 
-def wrapper(links_df):
-    proj_path = ""    
+def wrapper(links_df, subreddit = 'conflictfootage', save_path = ''):
+    proj_path = ""
+    logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
     if len(links_df) > 0:
         
-        download_videos(links_df)
+        download_videos(links_df, subreddit, save_path)
         
         old_place = str(int(open(proj_path + 'place.txt','r').read()))
         new_place = str(max(links_df.created_utc))
@@ -52,7 +60,7 @@ def wrapper(links_df):
         with open(proj_path + "place.txt", 'w') as f:
             f.write(new_place)
         
-        print(f"Log entry: Downloaded from {old_place} to {new_place} at {time.time()}")
+        logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
 
     else:
-        print("Log entry: No entries to download: {time.time()}")
+        logger.info("Log entry: No entries to download: {time.time()}")
