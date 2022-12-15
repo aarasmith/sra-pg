@@ -11,6 +11,7 @@ from yt_dlp import YoutubeDL, DownloadError
 import sys
 import time
 import archive_logging
+import s3_handlers
 
 def download_videos(links_df, subreddit, save_path):
     #db connection only necessary for legacy logs
@@ -28,7 +29,9 @@ def download_videos(links_df, subreddit, save_path):
                 "outtmpl": f"{file_name}.mp4",
                 "cookiefile": "yt_cookies.txt",
                 "noplaylist": True,
-                "logger": logger
+                "logger": logger,
+                "writedescription": True,
+                "writeinfojson": True
                 }
             try:
                 with YoutubeDL(ydl_opts) as ydl:
@@ -43,6 +46,7 @@ def download_videos(links_df, subreddit, save_path):
             except BaseException as ex:
                 logger.info(f'[{type(ex)}] {ex[0]}')
             else:
+                s3_handlers.move_to_s3(f"{file_name}.mp4", subreddit)
                 cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
                 con.commit()
 
