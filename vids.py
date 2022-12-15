@@ -30,7 +30,6 @@ def download_videos(links_df, subreddit, save_path):
                 "cookiefile": "yt_cookies.txt",
                 "noplaylist": True,
                 "logger": logger,
-                "writedescription": True,
                 "writeinfojson": True
                 }
             try:
@@ -46,7 +45,7 @@ def download_videos(links_df, subreddit, save_path):
             except BaseException as ex:
                 logger.info(f'[{type(ex)}] {ex[0]}')
             else:
-                s3_handlers.move_to_s3(f"{file_name}.mp4", subreddit)
+                s3_handlers.move_to_s3(file_path=f"{file_name}.mp4", bucket=subreddit, prefix=time.strftime('%Y-%m-%d'))
                 cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
                 con.commit()
 

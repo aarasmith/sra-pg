@@ -9,11 +9,13 @@ Created on Wed Dec 14 15:44:22 2022
 import boto3
 import os
 
-def move_to_s3(file_path, bucket):
+def move_to_s3(file_path, bucket, prefix = ''):
     validate_bucket(bucket)
     file_name = os.path.basename(file_path)
+    if len(prefix) > 0:
+        prefix = prefix + '/'
     s3 = boto3.client('s3')
-    s3.upload_file(file_path, bucket, file_name)
+    s3.upload_file(file_path, bucket, prefix + file_name)
 
 def list_buckets():
     return [bucket['Name'] for bucket in boto3.client('s3').list_buckets().get('Buckets')]
