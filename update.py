@@ -3,6 +3,7 @@
 import db
 import vids
 import pandas as pd
+import boto3
 
 
 def main_function():
@@ -22,6 +23,8 @@ def main_function():
         cf_db.sort_values(by=["created_utc"], inplace=True, ascending=False)
     
     vids.wrapper(cf_db)
-
+    with boto3.client('lambda', region_name = 'us-east-1') as client:
+        client.invoke(FunctionName='test',InvocationType='Event',Payload=b'{"subreddit":"conflictfootage"}')
+    
 if __name__ == "__main__":
     main_function()
