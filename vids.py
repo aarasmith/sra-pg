@@ -10,6 +10,8 @@ import db
 from yt_dlp import YoutubeDL, DownloadError
 import sys
 import time
+import os
+import glob
 import archive_logging
 import s3_handlers
 
@@ -35,6 +37,13 @@ def download_videos(links_df, subreddit, save_path):
             try:
                 with YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
+                s3_handlers.move_to_s3(file_path=f"{file_name}.mp4", bucket=subreddit, prefix=time.strftime('%Y-%m-%d'))
+                os.remove(f"{file_name}.mp4")
+                info_json = glob.glob(f"{file_name}*.json")[0]
+                s3_handlers.move_to_s3(file_path=info_json, bucket=subreddit, prefix=time.strftime('%Y-%m-%d'))
+                os.remove(info_json)
+                cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
+                con.commit()
             #legacy logs - when passing a logger object to ydl_opts this stuff all gets logged and sent to kafka
             except DownloadError as ex:
                 ex_type, ex_value = sys.exc_info()[0:2]
@@ -44,10 +53,7 @@ def download_videos(links_df, subreddit, save_path):
             #non-yt-dlp errors
             except BaseException as ex:
                 logger.info(f'[{type(ex)}] {ex[0]}')
-            else:
-                s3_handlers.move_to_s3(file_path=f"{file_name}.mp4", bucket=subreddit, prefix=time.strftime('%Y-%m-%d'))
-                cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
-                con.commit()
+                
 
 
 def wrapper(links_df, subreddit = 'conflictfootage', save_path = ''):
