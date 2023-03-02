@@ -27,7 +27,8 @@ def download_videos(links_df, subreddit, save_path):
             entry = links_df.iloc[i]
             url = entry.url
             file_name = save_path + "cf_vids/" + entry.id
-            logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
+            #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
+            logger = archive_logging.create_sqs_logger(topic_name = subreddit, logger_name = entry.id)
             ydl_opts = {
                 "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "outtmpl": f"{file_name}.mp4",
@@ -66,7 +67,8 @@ def download_videos(links_df, subreddit, save_path):
 
 def wrapper(links_df, subreddit = 'conflictfootage', save_path = ''):
     proj_path = ""
-    logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
+    #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
+    logger = archive_logging.create_sqs_logger(topic_name = subreddit, logger_name = "MAIN")
     if len(links_df) > 0:
         
         download_videos(links_df, subreddit, save_path)

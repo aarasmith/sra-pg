@@ -11,6 +11,7 @@ from kafka_logger.handlers import KafkaLoggingHandler
 import configparser
 import sys
 import re
+import sqs
 
 class StreamToLogger(object): #deprecated
     """
@@ -61,3 +62,14 @@ def add_stdout(logger): #deprecated
 class progress_filter(logging.Filter):
     def filter(self, record):
         return not bool(re.search("download]\s*\d+\.*\d*%.*ETA", record.msg))
+
+def create_sqs_logger(topic_name, logger_name, exclude_progress = True):
+    logger = logging.getLogger(logger_name)
+    sqs_handler_obj = sqs.SQSHandler(queue='test', aws_region='us-east-1')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(sqs_handler_obj)
+    
+    if exclude_progress:
+        logger.addFilter(progress_filter())
+    
+    return(logger)
