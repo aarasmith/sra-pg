@@ -11,7 +11,7 @@ import logging.handlers
 
 import boto3
 from retrying import retry
-import base64
+import re
 
 
 class SQSHandler(logging.Handler):
@@ -62,7 +62,7 @@ class SQSHandler(logging.Handler):
 
         if not self._entrance_flag:
             msg = self.format(record)
-            msg = msg.replace(r"([^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}])", " ")
+            msg = re.sub(r"([^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}])", " ", msg)
 
             # When the handler is attached to root logger, the call on SQS
             # below could generate more logging, and trigger nested emit
