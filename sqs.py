@@ -62,7 +62,7 @@ class SQSHandler(logging.Handler):
 
         if not self._entrance_flag:
             msg = self.format(record)
-            msg = re.sub(r"([^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}])", " ", msg)
+            msg = bytes(msg, 'utf-8').decode('utf-8', 'ignore')
 
             # When the handler is attached to root logger, the call on SQS
             # below could generate more logging, and trigger nested emit
