@@ -47,7 +47,7 @@ def download_videos(links_df, subreddit, save_path):
                 s3_handlers.move_to_s3(file_path=info_json, bucket=subreddit, prefix=time.strftime('%Y-%m-%d'))
                 with open(info_json) as f:
                     json_metadata = json.load(f, parse_float=decimal.Decimal)
-                metadata_item = {"pk":entry.id, "created_utc":entry.created_utc, "metadata":dict(json_metadata)}
+                metadata_item = {"pk":str(entry.id), "created_utc":int(entry.created_utc), "metadata":dict(json_metadata)}
                 s3_handlers.insert_to_dynamodb(json_item=metadata_item, table_name=subreddit)
                 os.remove(info_json)
                 
