@@ -12,6 +12,7 @@ import logging.handlers
 import boto3
 from retrying import retry
 import re
+import datetime
 
 
 class SQSHandler(logging.Handler):
@@ -61,10 +62,37 @@ class SQSHandler(logging.Handler):
             record.__dict__.update(self._global_extra)
 
         if not self._entrance_flag:
-            msg = self.format(record)
-            print(msg)
-            msg1 = re.sub('\u001B', '', msg, flags=re.UNICODE)
-            print(msg1)
+            #msg = self.format(record)
+            self.format(record)
+            record.msg = re.sub('\u001B', '', record.msg, flags=re.UNICODE)
+            
+            # If there's an exception, let's convert it to a string
+        if record.exc_info:
+            record.msg = repr(record.msg)
+            record.exc_info = repr(record.exc_info)
+
+        # Append additional fields
+        rec = {}
+        for key, value in record.__dict__.items():
+            if key not in ['abcdtrash']:
+                if key == "args":
+                    # convert ALL argument to a str representation
+                    # Elasticsearch supports number datatypes
+                    # but it is not 1:1 - logging "inf" float
+                    # causes _jsonparsefailure error in ELK
+                    value = tuple(repr(arg) for arg in value)
+                if key == "msg" and not isinstance(value, str):
+                    # msg contains custom class object
+                    # if there is no formatting in the logging call
+                    value = str(value)
+                rec[key] = "" if value is None else value
+            if key == "created":
+                # inspired by: cmanaha/python-elasticsearch-logger
+                created_date = datetime.datetime.utcfromtimestamp(record.created)
+                rec["timestamp"] = "{0!s}.{1:03d}Z".format(
+                    created_date.strftime("%Y-%m-%dT%H:%M:%S"),
+                    int(created_date.microsecond / 1000),
+                )
 
             # When the handler is attached to root logger, the call on SQS
             # below could generate more logging, and trigger nested emit
@@ -72,8 +100,8 @@ class SQSHandler(logging.Handler):
             self._entrance_flag = True
             try:
                 if self.MessageGroupId is not None:
-                  self.queue.send_message(MessageBody=msg, MessageGroupId=self.MessageGroupId)
+                  self.queue.send_message(MessageBody=rec, MessageGroupId=self.MessageGroupId)
                 else:
-                  self.queue.send_message(MessageBody=msg)
+                  self.queue.send_message(MessageBody=rec)
             finally:
                 self._entrance_flag = False
