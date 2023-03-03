@@ -14,6 +14,7 @@ from retrying import retry
 import re
 import datetime
 import json
+import socket
 
 
 class SQSHandler(logging.Handler):
@@ -66,6 +67,7 @@ class SQSHandler(logging.Handler):
             #msg = self.format(record)
             self.format(record)
             record.msg = re.sub('\u001B', '', record.msg, flags=re.UNICODE)
+            record.message = re.sub('\u001B', '', record.message, flags=re.UNICODE)
             
             # If there's an exception, let's convert it to a string
             if record.exc_info:
@@ -73,7 +75,11 @@ class SQSHandler(logging.Handler):
                 record.exc_info = repr(record.exc_info)
     
             # Append additional fields
-            rec = {}
+            rec = {
+                    "host": socket.gethostname(),
+                    "host_ip": socket.gethostbyname(socket.gethostname()),
+                }
+            
             for key, value in record.__dict__.items():
                 if key not in ["msecs", "relativeCreated", "levelno", "created"]:
                     if key == "args":
