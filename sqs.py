@@ -95,8 +95,7 @@ class SQSHandler(logging.Handler):
                         int(created_date.microsecond / 1000),
                     )
             
-            rec = json.dumps(rec)
-            print(rec)
+            rec = str(rec)
             # When the handler is attached to root logger, the call on SQS
             # below could generate more logging, and trigger nested emit
             # calls. Use the flag to prevent stack overflow.
