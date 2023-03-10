@@ -12,6 +12,7 @@ import configparser
 import sys
 import re
 import sqs
+import sns
 
 class StreamToLogger(object): #deprecated
     """
@@ -68,6 +69,17 @@ def create_sqs_logger(topic_name, logger_name, exclude_progress = True):
     sqs_handler_obj = sqs.SQSHandler(queue='test', aws_region='us-east-1')
     logger.setLevel(logging.DEBUG)
     logger.addHandler(sqs_handler_obj)
+    
+    if exclude_progress:
+        logger.addFilter(progress_filter())
+    
+    return(logger)
+
+def create_sns_logger(topic_name, logger_name, exclude_progress = True):
+    logger = logging.getLogger(logger_name)
+    sns_handler_obj = sns.SNSHandler(topic='conflictfootage-logs', aws_region='us-east-1')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(sns_handler_obj)
     
     if exclude_progress:
         logger.addFilter(progress_filter())

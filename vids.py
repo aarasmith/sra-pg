@@ -28,7 +28,7 @@ def download_videos(links_df, subreddit, save_path):
             url = entry.url
             file_name = save_path + "cf_vids/" + entry.id
             #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
-            logger = archive_logging.create_sqs_logger(topic_name = subreddit, logger_name = entry.id)
+            logger = archive_logging.create_sns_logger(topic_name = subreddit, logger_name = entry.id)
             ydl_opts = {
                 "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "outtmpl": f"{file_name}.mp4",
