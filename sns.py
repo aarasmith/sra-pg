@@ -44,7 +44,7 @@ class SNSHandler(logging.Handler):
                                             region_name=aws_region)
 
         client = session.resource('sns')
-        self.topic_arn = client.create_topic(Name=topic)
+        self.topic_arn = client.create_topic(Name=topic).arn
         self.sns_client = boto3.client('sns', region_name=aws_region)
         self._global_extra = global_extra
 
