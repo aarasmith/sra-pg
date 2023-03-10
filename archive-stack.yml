@@ -6,6 +6,10 @@ Parameters:
     Description: the github repo with the docker compose files
     Type: String
     Default: https://github.com/KermitTech/docker-compose-files.git
+  Subreddit:
+    Description: the subreddit to archive
+    Type: String
+    Default: combatfootage
   AvailabilityZone:
     Type: AWS::EC2::AvailabilityZone::Name
   EnvironmentType:
@@ -112,6 +116,83 @@ Resources:
               git clone ${Repo} ./docker-compose-files
               echo INSTANCE_PUBLIC_IP=$(curl http://checkip.amazonaws.com) > docker-compose-files/.env
               docker-compose -f ./docker-compose-files/kafka-docker-compose up -d
+
+  ArchiveDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "pk"
+          AttributeType: "S"
+        -
+          AttributeName: "created_utc"
+          AttributeType: "N"
+      KeySchema:
+        -
+          AttributeName: "pk"
+          KeyType: "HASH"
+        -
+          AttributeName: "created_utc"
+          KeyType: "RANGE"
+      BillingMode: "PAY_PER_REQUEST"
+      TableName: !Ref Subreddit
+
+  SQSDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", !Ref Subreddit, dlq]
+  
+  SQSDBLogs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", !Ref Subreddit, db]
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - "SQSDLQ"
+            - "Arn"
+          maxReceiveCount: 2
+  
+  SQSS3Logs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", !Ref Subreddit, s3]
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - "SQSDLQ"
+            - "Arn"
+          maxReceiveCount: 2
+
+  SQSDisasterLogs:
+    Type: AWS::SQS:Queue
+    Properties:
+      QueueName: !Join ["-", !Ref Subreddit, disaster]
+      MessageRetentionPeriod: 1209600
+
+  SNSLogs:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Join ["-", !Ref Subreddit, logs]
+      Subscription:
+        - Endpoint:
+            Fn::GetAtt:
+              - "SQSDBLogs"
+              - "Arn"
+            Protocol: "sqs"
+            RawMessageDelivery: "true"
+        - Endpoint:
+            Fn::GetAtt:
+              - "SQSS3Logs"
+              - "Arn"
+            Protocol: "sqs"
+            RawMessageDelivery: "true"
+        - Endpoint:
+            Fn::GetAtt:
+              - "SQSDisasterLogs"
+              - "Arn"
+            Protocol: "sqs"
+            RawMessageDelivery: "true"
 
   SshOnlySg:
     Type: AWS::EC2::SecurityGroup
