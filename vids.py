@@ -68,7 +68,7 @@ def download_videos(links_df, subreddit, save_path):
 def wrapper(links_df, subreddit = 'conflictfootage', save_path = ''):
     proj_path = ""
     #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
-    logger = archive_logging.create_sqs_logger(topic_name = subreddit, logger_name = "MAIN")
+    logger = archive_logging.create_sns_logger(topic_name = subreddit, logger_name = "MAIN")
     if len(links_df) > 0:
         
         download_videos(links_df, subreddit, save_path)
