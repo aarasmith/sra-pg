@@ -45,7 +45,7 @@ class SNSHandler(logging.Handler):
 
         client = session.resource('sns')
         self.topic_arn = client.create_topic(Name=topic)
-        self.sns_client = client
+        self.sns_client = boto3.client('sns', region_name=aws_region)
         self._global_extra = global_extra
 
         # When self.emit is called, the emit function will call boto3 code,
