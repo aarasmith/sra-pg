@@ -1,0 +1,403 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stack for the subreddit archiver
+
+Parameters:
+  Repo:
+    Description: the github repo with the docker compose files
+    Type: String
+    Default: https://github.com/KermitTech/docker-compose-files.git
+  Subreddit:
+    Description: the subreddit to archive
+    Type: String
+    Default: combatfootage
+  AvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+  EnvironmentType:
+    Description: "Specify the Environment type of the stack."
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  # AmiID:
+  #   Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+  #   Description: "The ID of the AMI."
+  #   Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  KeyPairName:
+    Description: The key used for this template
+    Type: 'AWS::EC2::KeyPair::KeyName'
+
+  DBInstanceIdentifier:
+    Type: String
+    Default: "archiver-db"
+  DBUsername:
+    NoEcho: "true"
+    Description: Username for Postgresql database access
+    Type: String
+    MinLength: "1"
+    MaxLength: "16"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+    Default: "postgres"
+  DBPassword:
+    NoEcho: "true"
+    Description: Password Postgresql database access
+    Type: String
+    MinLength: "8"
+    MaxLength: "41"
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: Must contain only alphanumeric characters.
+
+Mappings:
+  EnvironmentMap:
+    dev:
+      InstanceType: t2.nano
+      BackupRetentionPeriod: 0
+      DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+    test:
+      InstanceType: t2.micro
+      BackupRetentionPeriod: 0
+      DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+    prod:
+      InstanceType: t2.small
+      BackupRetentionPeriod: 7
+      DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+
+Conditions:
+  prod_cond: !Equals
+    - !Ref EnvironmentType
+    - "prod"
+
+Resources:
+  CodeRunner:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      ImageId: ami-08c40ec9ead489470
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref SshOnlySg
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [sra, !Ref EnvironmentType]]
+      UserData:
+          Fn::Base64:
+            !Sub |
+              #!/bin/bash
+              #INSTALL DOCKER AND DOCKER COMPOSE
+              apt-get update
+              apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              add-apt-repository \
+                "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+                $(lsb_release -cs) \
+                stable"
+              apt-get update
+              apt-get install -y docker-ce
+              usermod -aG docker ubuntu
+              curl -L https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+
+  ArchiveDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "pk"
+          AttributeType: "S"
+        -
+          AttributeName: "created_utc"
+          AttributeType: "N"
+      KeySchema:
+        -
+          AttributeName: "pk"
+          KeyType: "HASH"
+        -
+          AttributeName: "created_utc"
+          KeyType: "RANGE"
+      BillingMode: "PAY_PER_REQUEST"
+      TableName: !Ref Subreddit
+
+  SQSDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", [sra, !Ref Subreddit, dlq]]
+  
+  SQSDBLogs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", [sra, !Ref Subreddit, db]]
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - "SQSDLQ"
+            - "Arn"
+        maxReceiveCount: 2
+  
+  SQSS3Logs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", [sra, !Ref Subreddit, s3]]
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - "SQSDLQ"
+            - "Arn"
+        maxReceiveCount: 2
+
+  SQSDisasterLogs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Join ["-", [sra, !Ref Subreddit, disaster]]
+      MessageRetentionPeriod: 1209600
+
+  SNSLogs:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Join ["-", [!Ref Subreddit, logs]]
+  SQSDBLogsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt SQSDBLogs.Arn
+      Protocol: sqs
+      TopicArn: !Ref SNSLogs
+      RawMessageDelivery: "true"
+  SQSS3LogsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt SQSS3Logs.Arn
+      Protocol: sqs
+      TopicArn: !Ref SNSLogs
+      RawMessageDelivery: "true"
+  SQSDisasterLogsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt SQSDisasterLogs.Arn
+      Protocol: sqs
+      TopicArn: !Ref SNSLogs
+      RawMessageDelivery: "true"
+
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "ec2"]]
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Join ["-", ["sra", !Ref Subreddit, "ec2"]]
+      Path: "/"
+      Roles:
+      - !Ref EC2Role
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "lambda"]]
+  S3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "s3"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "s3:GetObject"
+            - "s3:ListBucket"
+            - "s3:PutBucketPublicAccessBlock"
+            - "s3:PutObject"
+            Resource: 
+              !Join
+                - ""
+                - - "arn:aws:s3:::"
+                  - !Ref Subreddit
+                  - "*"
+          - Effect: "Allow"
+            Action:
+            - "s3:ListAllMyBuckets"
+            - "s3:CreateBucket"
+            Resource: "*"
+      Roles:
+      - !Ref EC2Role
+  SecretsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "SecretsManager"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "secretsmanager:GetSecretValue"
+            Resource: !Join ["", ["arn:aws:secretsmanager:*:*:secret:sra/", !Ref Subreddit, "*"]]
+          - Effect: "Allow"
+            Action:
+            - "secretsmanager:ListSecrets"
+            Resource: "*"
+      Roles:
+      - !Ref EC2Role
+      - !Ref LambdaRole
+  SNSPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "SNS"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "sns:Publish"
+            Resource: !Join ["", ["arn:aws:sns:*:*:", !Ref Subreddit, "*"]]
+          - Effect: "Allow"
+            Action:
+            - "sns:CreateTopic"
+            Resource: "*"
+      Roles:
+      - !Ref EC2Role
+  DynamoDBPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "DynamoDB"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "dynamodb:PutItem"
+            Resource: !Join ["", ["arn:aws:dynamodb:*:*:table/", !Ref Subreddit, "*"]]
+      Roles:
+      - !Ref EC2Role
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "Lambda"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "logs:CreateLogGroup"
+            - "logs:CreateLogStream"
+            - "logs:PutLogEvents"
+            - "lambda:CreateEventSourceMapping"
+            - "lambda:ListEventSourceMapping"
+            - "lambda:ListFunctions"
+            Resource: "*"
+      Roles:
+      - !Ref LambdaRole
+  SQSPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "SQS"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "sqs:DeleteMessage"
+            - "sqs:GetQueueAttributes"
+            - "sqs:ReceiveMessage"
+            Resource: !Join ["", ["arn:aws:sqs:*:*:", !Ref Subreddit]]
+      Roles:
+      - !Ref LambdaRole
+  
+  SshOnlySg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-", [SSH-Only-sg, !Ref EnvironmentType]]
+      GroupDescription: "Allow SSH inbound and outbound traffic"
+      SecurityGroupIngress:
+        - !If
+          - prod_cond
+          - !Ref "AWS::NoValue"
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0
+
+  DBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Join ["/", ["sra", "db"]]
+      SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
+      #GenerateSecretString:
+        #SecretStringTemplate: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
+        #GenerateStringKey: !Ref AWS::NoValue
+        #PasswordLength: !Ref AWS::NoValue
+  #deletion policy only accepts string literals and no functions - so it is set to delete. the workaround would be to conditionally create 2 separate resources
+  ArchiveDb:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBSnapshotIdentifier: !If [prod_cond, !Ref AWS::NoValue, arn:aws:rds:us-east-1:178511640259:snapshot:archive-test]
+      VPCSecurityGroups:
+        - !GetAtt ArchiveDbSg.GroupId
+      AllocatedStorage: "10"
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      MasterUsername: !If [prod_cond, !Sub "{{resolve:secretsmanager:${DBSecret}::username}}", !Ref AWS::NoValue]
+      MasterUserPassword: !If [prod_cond, !Sub "{{resolve:secretsmanager:${DBSecret}::password}}", !Ref AWS::NoValue]
+      Tags:
+        - Key: EnvironmentType
+          Value: !Ref EnvironmentType
+      BackupRetentionPeriod: !FindInMap [EnvironmentMap, !Ref EnvironmentType, BackupRetentionPeriod]
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+  DBSecretAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref DBSecret
+      TargetId: !Ref ArchiveDb
+      TargetType: AWS::RDS::DBInstance
+
+  ArchiveDbSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-", [archive-db-sg, !Ref EnvironmentType]]
+      GroupDescription: Allow postgres inbound traffic
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+          # SourceSecurityGroupName:
+          #   Ref: WebAppSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [archive-db-sg, !Ref EnvironmentType]]
+
+# Outputs:
+#   WebsiteURL:
+#     Value: !Sub http://${WebAppEIP}
+#     Description: WebApp URL
+
+#   WebServerPublicDNS:
+#     Description: "Public DNS of EC2 instance"
+#     Value: !GetAtt WebAppInstance.PublicDnsName
+
+#   WebAppDatabaseEndpoint:
+#     Description: "Connection endpoint for the database"
+#     Value: !GetAtt WebAppDatabase.Endpoint.Address
