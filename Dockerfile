@@ -62,5 +62,4 @@ RUN set -x && \
 VOLUME /project
 WORKDIR /project
 # ENTRYPOINT ["python"]
-#
 CMD ["bash"]
