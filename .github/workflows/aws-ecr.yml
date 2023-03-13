@@ -1,0 +1,33 @@
+on:
+  push:
+    paths:
+      - "Dockerfile"
+      - "requirements.txt"
+name: App_Container_Workflow
+
+jobs:
+    build-and-push:
+        runs-on: ubuntu-latest
+        steps:
+        
+        - name: Check out code
+          uses: actions/checkout@v2
+        
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v2
+          with:
+            aws-region: us-east-1
+            role-to-assume: ${{secrets.AWS_ECR_ROLE_ARN}}
+            role-session-name: GitHubActions
+
+        - name: Set current date as env variable
+          run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        
+        - name: Build, tag, and push image to Amazon ECR
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            ECR_REPOSITORY: sra-dev
+          run: |
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$NOW -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$NOW
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
