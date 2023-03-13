@@ -39,17 +39,17 @@ RUN set -x && \
         && \
     git config --global advice.detachedHead false && \
     # Install required python modules
-    python3 -m pip install --no-cache-dir pyxattr && \
+    python3 -m pip install --no-cache-dir --break-system-packages pyxattr && \
     # Install yt-dlp via pip
-    python3 -m pip install --no-cache-dir --force-reinstall yt-dlp && \
+    python3 -m pip install --no-cache-dir --force-reinstall --break-system-packages yt-dlp && \
     # Create /config directory
     mkdir -p /config && \
     #install archiver
-    git clone https://github.com/arshadrr/subreddit-archiver.git && \
+    git clone git@github.com:aarasmith/sra-pg-extension.git && \
     cd subreddit-archiver && \
-    python3 -m pip install . && \
+    python3 -m pip install --break-system-packages . && \
     cd .. && \
-    python3 -m pip install --no-cache-dir -r requirements.txt && \
+    python3 -m pip install --no-cache-dir --break-system-packages -r requirements.txt && \
     # Clean-up.
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
