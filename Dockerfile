@@ -45,7 +45,7 @@ RUN set -x && \
     # Create /config directory
     mkdir -p /config && \
     #install archiver
-    git clone git@github.com:aarasmith/sra-pg-extension.git && \
+    git clone https://github.com/arshadrr/subreddit-archiver.git && \
     cd subreddit-archiver && \
     python3 -m pip install --break-system-packages . && \
     cd .. && \
