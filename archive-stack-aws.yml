@@ -3,9 +3,9 @@ Description: Stack for the subreddit archiver
 
 Parameters:
   Repo:
-    Description: the github repo with the docker compose files
+    Description: the project github repo
     Type: String
-    Default: https://github.com/KermitTech/docker-compose-files.git
+    Default: aarasmith/sra-pg
   Subreddit:
     Description: the subreddit to archive
     Type: String
@@ -99,6 +99,82 @@ Resources:
               usermod -aG docker ubuntu
               curl -L https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
+
+  ImageRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Join ["-", [sra, !Ref EnvironmentType]]
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+          ScanOnPush: true
+      #RepositoryPolicyText:
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Only keep 3 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 3
+              },
+              "action": { "type": "expire" }
+            }]
+          }
+  GitHubIdentityProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+      ClientIdList:
+        - sts.amazonaws.com
+  GitHubActionsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubIdentityProvider.Arn
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "token.actions.githubusercontent.com:aud": sts.amazonaws.com
+              StringLike:
+                "token.actions.githubusercontent.com:sub": !Join ["", ["repo:", !Ref Repo, ":*"]]
+      Description: Service Role for use in GitHub Actions
+      Path: "/"
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "GitHubActions"]]
+  ECRPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", [!Ref Subreddit, "GitHubActions"]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "ecr:GetAuthorizationToken"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+            - "ecr:BatchGetImage"
+            - "ecr:BatchCheckLayerAvailability"
+            - "ecr:CompleteLayerUpload"
+            - "ecr:GetDownloadUrlForLayer"
+            - "ecr:InitiateLayerUpload"
+            - "ecr:PutImage"
+            - "ecr:UploadLayerPart"
+            Resource: !GetAtt ImageRepo.Arn
+      Roles:
+      - !Ref GitHubActionsServiceRole
+      - !Ref EC2Role 
 
   ArchiveDynamoDB:
     Type: AWS::DynamoDB::Table
@@ -389,6 +465,10 @@ Resources:
         - Key: Name
           Value: !Join ["-", [archive-db-sg, !Ref EnvironmentType]]
 
+Outputs:
+  ServiceRoleARN:
+    Description: arn of service role for use in GitHub actions
+    Value: !GetAtt GitHubActionsServiceRole.Arn
 # Outputs:
 #   WebsiteURL:
 #     Value: !Sub http://${WebAppEIP}
