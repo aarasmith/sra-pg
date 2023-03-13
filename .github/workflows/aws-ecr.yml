@@ -3,7 +3,7 @@ on:
     paths:
       - "Dockerfile"
       - "requirements.txt"
-name: App_Container_Workflow
+name: ECR_Container_Workflow
 
 jobs:
     build-and-push:
