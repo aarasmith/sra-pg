@@ -72,6 +72,7 @@ Conditions:
 Resources:
   CodeRunner:
     Type: AWS::EC2::Instance
+    DependsOn: ImageRepo
     Properties:
       AvailabilityZone: !Ref AvailabilityZone
       ImageId: ami-08c40ec9ead489470
@@ -79,6 +80,7 @@ Resources:
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref SshOnlySg
+      IamInstanceProfile: !Ref EC2InstanceProfile
       Tags:
         - Key: Name
           Value: !Join ["-", [sra, !Ref EnvironmentType]]
@@ -99,6 +101,9 @@ Resources:
               usermod -aG docker ubuntu
               curl -L https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
+              apt install awscli
+              aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+              docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
 
   ImageRepo:
     Type: AWS::ECR::Repository
