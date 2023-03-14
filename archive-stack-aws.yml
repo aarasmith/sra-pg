@@ -73,6 +73,9 @@ Resources:
   CodeRunner:
     Type: AWS::EC2::Instance
     DependsOn: ImageRepo
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
     Properties:
       AvailabilityZone: !Ref AvailabilityZone
       ImageId: ami-08c40ec9ead489470
@@ -104,6 +107,9 @@ Resources:
               apt install awscli
               aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
               docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
+              apt-get install -y build-essential python3-pip
+              pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+              /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource CodeRunner --region ${AWS::Region}
 
   ImageRepo:
     Type: AWS::ECR::Repository
