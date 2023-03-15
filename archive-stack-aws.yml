@@ -111,7 +111,7 @@ Resources:
               #docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
               #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
               mkdir project_files
-              git clone git@github.com:${Repo}.git ./project_files
+              git clone https://github.com/${Repo}.git ./project_files
               zip -r layer.zip project_files/lambda_layer/python
               aws s3 cp layer.zip s3://${S3Bucket}/lambda/layer.zip
               #ZIP-SEND SQS LAMBDA FUNCTION
