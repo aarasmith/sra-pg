@@ -75,7 +75,7 @@ Resources:
     DependsOn: [ImageRepo, S3Bucket]
     CreationPolicy:
       ResourceSignal:
-        Timeout: PT5M
+        Timeout: PT10M
     Properties:
       AvailabilityZone: !Ref AvailabilityZone
       ImageId: ami-08c40ec9ead489470
@@ -105,12 +105,11 @@ Resources:
               curl -L https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
               #INSTALL AWS CLI AND CONFIGURE DOCKER LOGIN TO ECR
-              apt install awscli
+              apt-get install -y awscli
               aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-              #pull commented out while developing
-              #docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
+              docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
               #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
-              apt install -y zip
+              apt-get install -y zip
               mkdir project_files
               git clone https://github.com/${Repo}.git ./project_files
               zip -r layer.zip project_files/lambda_layer/python
@@ -130,19 +129,20 @@ Resources:
     Properties:
       Content:
         S3Bucket: !Ref S3Bucket
-        S3Key: "lambda/layer.zip"
+        S3Key: lambda/layer.zip
   SQSLambdaFunction:
     DependsOn: [Psycopg2Layer, SQSDBLogs]
     Type: AWS::Lambda::Function
     Properties:
       Code:
         S3Bucket: !Ref S3Bucket
-        S3Key: "lambda/package.zip"
+        S3Key: lambda/package.zip
       FunctionName: !Join ["-", [!Ref Subreddit, sqs-log-handling, !Ref EnvironmentType]]
       Handler: lambda_function.lambda_handler
-      Layers: !Ref Psycopg2Layer
+      Layers:
+        - !Ref Psycopg2Layer
       PackageType: Zip
-      Role: !Ref LambdaRole
+      Role: !GetAtt LambdaRole.Arn
       Runtime: python3.9
       Timeout: 25
       Environment:
@@ -164,11 +164,11 @@ Resources:
     Properties:
       AccessControl: Private
       BucketName: !Join ["-", [!Ref Subreddit, !Ref EnvironmentType]]
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "aws:kms"
-              KMSMasterKeyID: KMS-KEY-ARN
+      # BucketEncryption:
+      #   ServerSideEncryptionConfiguration:
+      #     - ServerSideEncryptionByDefault:
+      #         SSEAlgorithm: "aws:kms"
+      #         KMSMasterKeyID: KMS-KEY-ARN
       PublicAccessBlockConfiguration:
         BlockPublicAcls: TRUE
         BlockPublicPolicy: TRUE
@@ -473,7 +473,7 @@ Resources:
             - "sqs:DeleteMessage"
             - "sqs:GetQueueAttributes"
             - "sqs:ReceiveMessage"
-            Resource: !Join ["", ["arn:aws:sqs:*:*:", !Ref Subreddit]]
+            Resource: !Join ["", ["arn:aws:sqs:*:*:", sra-, !Ref Subreddit, "*"]]
       Roles:
       - !Ref LambdaRole
   
