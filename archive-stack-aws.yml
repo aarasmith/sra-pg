@@ -146,7 +146,7 @@ Resources:
       Environment:
         Variables:
           subreddit: !Ref Subreddit
-          secret_id: !Join ["/", ["sra", "db", !Ref EnvrionmentType]]
+          secret_id: !Join ["/", ["sra", "db", !Ref EnvironmentType]]
   SQSTrigger:
     DependsOn: SQSLambdaFunction
     Type: AWS::Lambda::EventSourceMapping
@@ -492,7 +492,7 @@ Resources:
   DBSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Join ["/", ["sra", "db", !Ref EnvrionmentType]]
+      Name: !Join ["/", ["sra", "db", !Ref EnvironmentType]]
       SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}", "database": "SRA"}'
       #GenerateSecretString:
         #SecretStringTemplate: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
