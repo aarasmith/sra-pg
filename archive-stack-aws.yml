@@ -110,13 +110,18 @@ Resources:
               docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
               #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
               apt-get install -y zip
+              cd ~
               mkdir project_files
               git clone https://github.com/${Repo}.git ./project_files
-              zip -r layer.zip project_files/lambda_layer/python
+              cd project_files/lambda_layer
+              zip -r layer.zip .
               aws s3 cp layer.zip s3://${S3Bucket}/lambda/layer.zip
+              cd ~
               #ZIP-SEND SQS LAMBDA FUNCTION
-              zip -r package.zip project_files/lambda_code
+              cd project_files/lambda_code
+              zip -r package.zip .
               aws s3 cp package.zip s3://${S3Bucket}/lambda/package.zip
+              cd /
               #INSTALL CFN-SIGNAL AND SEND COMPLETE SIGNAL
               apt-get install -y build-essential python3-pip
               pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
