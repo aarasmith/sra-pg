@@ -107,15 +107,16 @@ Resources:
               #INSTALL AWS CLI AND CONFIGURE DOCKER LOGIN TO ECR
               apt install awscli
               aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-              docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
+              #pull commented out while developing
+              #docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
               #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
               mkdir project_files
               git clone git@github.com:${Repo}.git ./project_files
               zip -r layer.zip project_files/lambda_layer/python
-              aws s3 cp layer.zip s3://${Subreddit}/lambda/layer.zip
+              aws s3 cp layer.zip s3://${S3Bucket}/lambda/layer.zip
               #ZIP-SEND SQS LAMBDA FUNCTION
               zip -r package.zip project_files/lambda_code
-              aws s3 cp package.zip s3://${Subreddit}/lambda/package.zip
+              aws s3 cp package.zip s3://${S3Bucket}/lambda/package.zip
               #INSTALL CFN-SIGNAL AND SEND COMPLETE SIGNAL
               apt-get install -y build-essential python3-pip
               pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
