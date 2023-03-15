@@ -72,7 +72,7 @@ Conditions:
 Resources:
   CodeRunner:
     Type: AWS::EC2::Instance
-    DependsOn: ImageRepo
+    DependsOn: [ImageRepo, S3Bucket]
     CreationPolicy:
       ResourceSignal:
         Timeout: PT5M
@@ -104,13 +104,76 @@ Resources:
               usermod -aG docker ubuntu
               curl -L https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
+              #INSTALL AWS CLI AND CONFIGURE DOCKER LOGIN TO ECR
               apt install awscli
               aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
               docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
+              #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
+              mkdir project_files
+              git clone git@github.com:${Repo}.git ./project_files
+              zip -r layer.zip project_files/lambda_layer/python
+              aws s3 cp layer.zip s3://${Subreddit}/lambda/layer.zip
+              #ZIP-SEND SQS LAMBDA FUNCTION
+              zip -r package.zip project_files/lambda_code
+              aws s3 cp package.zip s3://${Subreddit}/lambda/package.zip
+              #INSTALL CFN-SIGNAL AND SEND COMPLETE SIGNAL
               apt-get install -y build-essential python3-pip
               pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
               /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource CodeRunner --region ${AWS::Region}
 
+  #should be shared resource
+  Psycopg2Layer:
+    DependsOn: CodeRunner
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref S3Bucket
+        S3Key: "lambda/layer.zip"
+  SQSLambdaFunction:
+    DependsOn: [Psycopg2Layer, SQSDBLogs]
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: "lambda/package.zip"
+      FunctionName: !Join ["-", [!Ref Subreddit, sqs-log-handling, !Ref EnvironmentType]]
+      Handler: lambda_function.lambda_handler
+      Layers: !Ref Psycopg2Layer
+      PackageType: Zip
+      Role: !Ref LambdaRole
+      Runtime: python3.9
+      Timeout: 25
+      Environment:
+        Variables:
+          subreddit: !Ref Subreddit
+          secret_id: !Join ["/", ["sra", "db", !Ref EnvrionmentType]]
+  SQSTrigger:
+    DependsOn: SQSLambdaFunction
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1000
+      EventSourceArn: !GetAtt SQSDBLogs.Arn
+      FunctionName: !GetAtt SQSLambdaFunction.Arn
+      MaximumBatchingWindowInSeconds: 60
+  
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref Subreddit
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: KMS-KEY-ARN
+      DeletionPolicy: Delete
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+  
+  #should be shared resource
   ImageRepo:
     Type: AWS::ECR::Repository
     Properties:
@@ -134,7 +197,7 @@ Resources:
               "action": { "type": "expire" }
             }]
           }
-  GitHubIdentityProvider:
+  GitHubIdentityProvider: #should be shared resource
     Type: AWS::IAM::OIDCProvider
     Properties:
       Url: https://token.actions.githubusercontent.com
@@ -429,14 +492,14 @@ Resources:
   DBSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Join ["/", ["sra", "db"]]
-      SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
+      Name: !Join ["/", ["sra", "db", !Ref EnvrionmentType]]
+      SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}", "database": "SRA"}'
       #GenerateSecretString:
         #SecretStringTemplate: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
         #GenerateStringKey: !Ref AWS::NoValue
         #PasswordLength: !Ref AWS::NoValue
   #deletion policy only accepts string literals and no functions - so it is set to delete. the workaround would be to conditionally create 2 separate resources
-  ArchiveDb:
+  ArchiveDb: #should be shared resource
     Type: AWS::RDS::DBInstance
     Properties:
       DBSnapshotIdentifier: !If [prod_cond, !Ref AWS::NoValue, arn:aws:rds:us-east-1:178511640259:snapshot:archive-test]
