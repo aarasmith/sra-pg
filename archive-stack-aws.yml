@@ -110,6 +110,7 @@ Resources:
               #pull commented out while developing
               #docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sra-${EnvironmentType}
               #CLONE GIT REPO AND ZIP-SEND LAMBDA LAYER
+              apt install zip
               mkdir project_files
               git clone https://github.com/${Repo}.git ./project_files
               zip -r layer.zip project_files/lambda_layer/python
