@@ -48,6 +48,14 @@ Parameters:
     MaxLength: "41"
     AllowedPattern: "[a-zA-Z0-9]*"
     ConstraintDescription: Must contain only alphanumeric characters.
+  ClientId:
+    NoEcho: "true"
+    Description: Reddit API Client ID
+    Type: String
+  ClientSecret:
+    NoEcho: "true"
+    Description: Reddit API Client Secret
+    Type: String
 
 Mappings:
   EnvironmentMap:
@@ -410,7 +418,9 @@ Resources:
           - Effect: "Allow"
             Action:
             - "secretsmanager:GetSecretValue"
-            Resource: !Join ["", ["arn:aws:secretsmanager:*:*:secret:sra/", !Ref Subreddit, "*"]]
+            Resource:
+            - !Join ["", ["arn:aws:secretsmanager:*:*:secret:sra/", !Ref Subreddit, "*"]]
+            - !Join ["", ["arn:aws:secretsmanager:*:*:secret:sra/", shared/, "*"]]
           - Effect: "Allow"
             Action:
             - "secretsmanager:ListSecrets"
@@ -499,8 +509,8 @@ Resources:
   DBSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Join ["/", ["sra", "db", !Ref EnvironmentType]]
-      SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}", "database": "SRA"}'
+      Name: !Join ["/", ["sra", "shared", !Ref EnvironmentType]]
+      SecretString: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}", "database": "subreddits", "client_id": "${ClientId}", "client_secret": "${ClientSecret}"}'
       #GenerateSecretString:
         #SecretStringTemplate: !Sub '{"username": "${DBUsername}", "password": "${DBPassword}"}'
         #GenerateStringKey: !Ref AWS::NoValue
