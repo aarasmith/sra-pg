@@ -46,14 +46,20 @@ def download_videos(links_df, destinations, save_path):
             s3_handlers.insert_to_dynamodb(json_item=metadata_item, table_name=destinations['dynamo_table'], region = destinations['aws_region'])
             os.remove(info_json)
             
+            #processed = "Y"
             #cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
             #con.commit()
         #legacy logs - when passing a logger object to ydl_opts this stuff all gets logged and sent to kafka
         except DownloadError:
             pass
+            #processed = "N"
         #non-yt-dlp errors
         except Exception as ex:
             logger.info(repr(ex))
+        finally:
+            new_place = str(entry.created_utc)          
+            with open("place.txt", 'w') as f:
+                f.write(new_place)
                 
 
 
@@ -63,13 +69,14 @@ def wrapper(links_df, destinations, save_path = ''):
     logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], logger_name = "MAIN")
     if len(links_df) > 0:
         
-        download_videos(links_df, destinations, save_path)
-        
         old_place = str(int(open(proj_path + 'place.txt','r').read()))
-        new_place = str(max(links_df.created_utc))
         
-        with open(proj_path + "place.txt", 'w') as f:
-            f.write(new_place)
+        download_videos(links_df, destinations, save_path)       
+        
+        new_place = str(int(open(proj_path + 'place.txt','r').read()))
+        
+        # with open(proj_path + "place.txt", 'w') as f:
+        #     f.write(new_place)
         
         logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
 
