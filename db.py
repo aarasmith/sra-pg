@@ -6,21 +6,15 @@ Created on Fri Dec  9 18:02:40 2022
 @author: andara
 """
 import psycopg2
-import configparser
 
-def get_connection(search_path, config_file = "connection.config"):
-    
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    
-    config_tag = 'DEFAULT'
+def get_connection(search_path, credentials):
     
     return psycopg2.connect(
-            host=config[config_tag]['PG_HOST'],
-            database=config[config_tag]['PG_DATABASE'],
-            user=config[config_tag]['PG_USER'],
-            password=config[config_tag]['PG_PASSWORD'],
-            port=config[config_tag]['PG_PORT'],
+            host=credentials['host'],
+            database=credentials['database'],
+            user=credentials['username'],
+            password=credentials['password'],
+            port=credentials['port'],
             options=f"-c search_path={search_path}"
         )
 

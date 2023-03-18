@@ -38,7 +38,7 @@ def validate_bucket(bucket: str, create = True):
     else:
         pass
     
-def insert_to_dynamodb(json_item, table_name):
-    dynamo = boto3.resource('dynamodb', region_name='us-east-1')
+def insert_to_dynamodb(json_item, table_name, region):
+    dynamo = boto3.resource('dynamodb', region_name=region)
     table = dynamo.Table(table_name)
     table.put_item(Item=json_item)
