@@ -9,7 +9,7 @@ import subreddit_archiver as sra
 import os
 
 
-def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environment = 'dev', debug=False):
+def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environment = 'dev', debug=False, update=True):
     #logger = archive_logging.create_kafka_logger(topic_name = 'archive_log')
     #archive_logging.add_stdout(logger)
     
@@ -25,12 +25,23 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         environment=os.environ['environment']
     except KeyError:
         pass
+    try:
+        if os.environ['debug'].lower() == 'true':
+            debug = True
+    except KeyError:
+        pass
+    try:
+        if os.environ['update'].lower() == 'false':
+            debug = False
+    except KeyError:
+        pass
     
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
     
-    sra.main.update(subreddit, batch_size=100, credentials=credentials)
+    if update:
+        sra.main.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
