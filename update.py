@@ -48,7 +48,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     if debug:
         cf_db = cf_db.head()
     
-    vids.wrapper(cf_db, destinations, subreddit)
+    vids.wrapper(cf_db, destinations)
     #client = boto3.client('lambda', region_name = 'us-east-1')
     #client.invoke(FunctionName='test',InvocationType='Event',Payload=b'{"subreddit":"conflictfootage"}')
     
