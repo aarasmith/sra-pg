@@ -71,14 +71,14 @@ def wrapper(links_df, destinations, save_path = ''):
         
         old_place = str(int(open(proj_path + 'place.txt','r').read()))
         
-        download_videos(links_df, destinations, save_path)       
+        try:
+            download_videos(links_df, destinations, save_path)
+        except Exception:
+            pass
+        finally:
+            s3_handlers.move_to_s3(file_path='place.txt', bucket=destinations['bucket'])
+            new_place = str(int(open(proj_path + 'place.txt','r').read()))
+            logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
         
-        new_place = str(int(open(proj_path + 'place.txt','r').read()))
-        
-        # with open(proj_path + "place.txt", 'w') as f:
-        #     f.write(new_place)
-        
-        logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
-
     else:
         logger.info("Log entry: No entries to download: {time.time()}")
