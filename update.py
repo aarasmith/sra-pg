@@ -5,6 +5,8 @@ import vids
 import pandas as pd
 import json
 import boto3
+import subreddit_archiver as sra
+import os
 
 
 def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environment = 'dev'):
@@ -14,6 +16,8 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
+    
+    sra.main.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
@@ -38,4 +42,4 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     #client.invoke(FunctionName='test',InvocationType='Event',Payload=b'{"subreddit":"conflictfootage"}')
     
 if __name__ == "__main__":
-    main_function()
+    main_function(aws_region=os.environ['aws_region'], subreddit=os.environ['subreddit'], environment=os.environ['environment'])
