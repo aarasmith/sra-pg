@@ -13,6 +13,19 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     #logger = archive_logging.create_kafka_logger(topic_name = 'archive_log')
     #archive_logging.add_stdout(logger)
     
+    try:
+        aws_region=os.environ['aws_region']
+    except KeyError:
+        pass
+    try:
+        subreddit=os.environ['subreddit']
+    except KeyError:
+        pass
+    try:
+        environment=os.environ['environment']
+    except KeyError:
+        pass
+    
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
@@ -53,4 +66,4 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     #client.invoke(FunctionName='test',InvocationType='Event',Payload=b'{"subreddit":"conflictfootage"}')
     
 if __name__ == "__main__":
-    main_function(aws_region=os.environ['aws_region'], subreddit=os.environ['subreddit'], environment=os.environ['environment'])
+    main_function()
