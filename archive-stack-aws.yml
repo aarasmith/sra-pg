@@ -161,7 +161,7 @@ Resources:
       Environment:
         Variables:
           subreddit: !Ref Subreddit
-          secret_id: !Join ["/", ["sra", "db", !Ref EnvironmentType]]
+          secret_id: !Join ["/", ["sra", "shared", !Ref EnvironmentType]]
   SQSTrigger:
     DependsOn: SQSLambdaFunction
     Type: AWS::Lambda::EventSourceMapping
@@ -239,11 +239,11 @@ Resources:
                 "token.actions.githubusercontent.com:sub": !Join ["", ["repo:", !Ref Repo, ":*"]]
       Description: Service Role for use in GitHub Actions
       Path: "/"
-      RoleName: !Join ["-", ["sra", !Ref Subreddit, "GitHubActions"]]
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "GitHubActions", !Ref EnvironmentType]]
   ECRPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "GitHubActions"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "GitHubActions", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -283,17 +283,17 @@ Resources:
           AttributeName: "created_utc"
           KeyType: "RANGE"
       BillingMode: "PAY_PER_REQUEST"
-      TableName: !Ref Subreddit
+      TableName: !Join ["-", [!Ref Subreddit, !Ref EnvironmentType]]
 
   SQSDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Join ["-", [sra, !Ref Subreddit, dlq]]
+      QueueName: !Join ["-", [sra, !Ref Subreddit, dlq, !Ref EnvironmentType]]
   
   SQSDBLogs:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Join ["-", [sra, !Ref Subreddit, db]]
+      QueueName: !Join ["-", [sra, !Ref Subreddit, db, !Ref EnvironmentType]]
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
@@ -304,7 +304,7 @@ Resources:
   SQSS3Logs:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Join ["-", [sra, !Ref Subreddit, s3]]
+      QueueName: !Join ["-", [sra, !Ref Subreddit, s3, !Ref EnvironmentType]]
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
@@ -315,13 +315,13 @@ Resources:
   SQSDisasterLogs:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Join ["-", [sra, !Ref Subreddit, disaster]]
+      QueueName: !Join ["-", [sra, !Ref Subreddit, disaster, !Ref EnvironmentType]]
       MessageRetentionPeriod: 1209600
 
   SNSLogs:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Join ["-", [!Ref Subreddit, logs]]
+      TopicName: !Join ["-", [!Ref Subreddit, logs, !Ref EnvironmentType]]
   SQSDBLogsSubscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -359,11 +359,11 @@ Resources:
             Action:
               - "sts:AssumeRole"
       Path: "/"
-      RoleName: !Join ["-", ["sra", !Ref Subreddit, "ec2"]]
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "ec2", !Ref EnvironmentType]]
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Join ["-", ["sra", !Ref Subreddit, "ec2"]]
+      InstanceProfileName: !Join ["-", ["sra", !Ref Subreddit, "ec2", !Ref EnvironmentType]]
       Path: "/"
       Roles:
       - !Ref EC2Role
@@ -381,11 +381,11 @@ Resources:
             Action:
               - "sts:AssumeRole"
       Path: "/"
-      RoleName: !Join ["-", ["sra", !Ref Subreddit, "lambda"]]
+      RoleName: !Join ["-", ["sra", !Ref Subreddit, "lambda", !Ref EnvironmentType]]
   S3Policy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "s3"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "s3", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -411,7 +411,7 @@ Resources:
   SecretsPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "SecretsManager"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "SecretsManager", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -431,7 +431,7 @@ Resources:
   SNSPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "SNS"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "SNS", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -448,7 +448,7 @@ Resources:
   DynamoDBPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "DynamoDB"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "DynamoDB", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -461,7 +461,7 @@ Resources:
   LambdaPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "Lambda"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "Lambda", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -479,7 +479,7 @@ Resources:
   SQSPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Join ["-", [!Ref Subreddit, "SQS"]]
+      PolicyName: !Join ["-", [!Ref Subreddit, "SQS", !Ref EnvironmentType]]
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
