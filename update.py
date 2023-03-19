@@ -5,7 +5,7 @@ import vids
 import pandas as pd
 import json
 import boto3
-import subreddit_archiver as sra
+from subreddit_archiver import main
 import os
 
 
@@ -41,7 +41,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
     
     if update:
-        sra.update(subreddit, batch_size=100, credentials=credentials)
+        main.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
