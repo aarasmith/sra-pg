@@ -16,8 +16,8 @@ USER_AGENT = "subreddit-archiver"
 def archive(subreddit, out_file, batch_size, credentials):
     # TODO: validate if a subreddit exists
     reddit = praw.Reddit(
-            client_id = credentials.client_id,
-            client_secret = credentials.client_secret,
+            client_id = credentials['client_id'],
+            client_secret = credentials['client_secret'],
             user_agent = USER_AGENT
             )
     db_connection = db.get_connection(out_file, credentials)
@@ -41,8 +41,8 @@ def archive(subreddit, out_file, batch_size, credentials):
 @utils.clean_exit
 def update(out_file, batch_size, credentials):
     reddit = praw.Reddit(
-            client_id = credentials.client_id,
-            client_secret = credentials.client_secret,
+            client_id = credentials['client_id'],
+            client_secret = credentials['client_secret'],
             user_agent = USER_AGENT
             )
     db_connection = db.get_connection(out_file, credentials)
