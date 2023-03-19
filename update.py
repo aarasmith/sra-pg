@@ -67,7 +67,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     cf_db = cf_db.fillna("0")
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 8")]
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 2")]
-    cf_db.sort_values(by=["created_utc"], inplace=True, ascending=False)
+    cf_db.sort_values(by=["created_utc"], inplace=True, ascending=True)
     
     if debug:
         cf_db = cf_db.head()
