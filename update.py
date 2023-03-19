@@ -54,7 +54,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         try:
             s3_client = boto3.client('s3')
             s3_client.get_object(Bucket=destinations['bucket'], Key='place.txt')
-        except boto3.S3.Client.exceptions.NoSuchKey:
+        except s3_client.exceptions.NoSuchKey:
             with open("place.txt", 'w') as f:
                 f.write(str(0))
         
