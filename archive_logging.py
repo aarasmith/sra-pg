@@ -75,9 +75,9 @@ def create_sqs_logger(topic_name, logger_name, exclude_progress = True):
     
     return(logger)
 
-def create_sns_logger(topic_name, logger_name, exclude_progress = True):
+def create_sns_logger(topic_name, region, logger_name, exclude_progress = True):
     logger = logging.getLogger(logger_name)
-    sns_handler_obj = sns.SNSHandler(topic='conflictfootage-logs', aws_region='us-east-1')
+    sns_handler_obj = sns.SNSHandler(topic=topic_name, aws_region=region)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(sns_handler_obj)
     

@@ -23,7 +23,7 @@ def download_videos(links_df, destinations, save_path):
         url = entry.url
         file_name = save_path + "downloads/" + entry.id
         #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
-        logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], logger_name = entry.id)
+        logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], region=destinations['aws_region'], logger_name = entry.id)
         ydl_opts = {
             "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
             "outtmpl": f"{file_name}.mp4",
@@ -66,7 +66,7 @@ def download_videos(links_df, destinations, save_path):
 def wrapper(links_df, destinations, save_path = ''):
     proj_path = ""
     #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
-    logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], logger_name = "MAIN")
+    logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], region=destinations['aws_region'], logger_name = "MAIN")
     if len(links_df) > 0:
         
         old_place = str(int(open(proj_path + 'place.txt','r').read()))
