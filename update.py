@@ -41,7 +41,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
     
     if update:
-        sra.main.update(subreddit, batch_size=100, credentials=credentials)
+        sra.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
