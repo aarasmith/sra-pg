@@ -491,7 +491,34 @@ Resources:
             Resource: !Join ["", ["arn:aws:sqs:*:*:", sra-, !Ref Subreddit, "*"]]
       Roles:
       - !Ref LambdaRole
-  
+  SQSAccessPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SQSDBLogs
+        - !Ref SQSS3Logs
+        - !Ref SQSDisasterLogs
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: AllowIncomingAccess
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - !Ref AWS::AccountId
+            Action:
+              - sqs:SendMessage
+              - sqs:ReceiveMessage
+            Resource: !Join ["", [arn:aws:sqs:*:*, !Ref Subreddit, "*"]]
+          - Effect: "Allow"
+            Principal: "*"
+            Action:
+              - sqs:SendMessage
+            Resource: !Join ["", [arn:aws:sqs:*:*, !Ref Subreddit, "*"]]
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref SNSLogs
+
   SshOnlySg:
     Type: AWS::EC2::SecurityGroup
     Properties:
