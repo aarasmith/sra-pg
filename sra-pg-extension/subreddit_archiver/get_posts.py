@@ -7,7 +7,7 @@ from subreddit_archiver import states, serializer, db, progressbars
 
 def get_from_pushshift(url):
     request = requests.get(url)
-    print(request.status_code)
+    print(request.json())
     if request.status_code in range(500, 600):
         print(f"\nUnable to connect to Pushshift.io, it appears to be down. HTTP {request.status_code}. Exiting.")
         exit(1)
