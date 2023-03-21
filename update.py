@@ -55,15 +55,10 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         "dynamo_table": f"{subreddit}-{environment}",
         "aws_region": aws_region
         }
-    try:
-        os.remove('place.txt')
-    except Exception:
-        pass
     
     try:
         s3_client = boto3.client('s3')
-        response = s3_client.get_object(Bucket=destinations['bucket'], Key='place.txt')
-        print(response)
+        s3_client.download_file(destinations['bucket'], 'place.txt', 'place.txt')
     except s3_client.exceptions.NoSuchKey:
         with open("place.txt", 'w') as f:
             f.write(str(0))
