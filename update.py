@@ -28,11 +28,13 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     try:
         if os.environ['debug'].lower() == 'true':
             debug = True
+            print(debug)
     except KeyError:
         pass
     try:
         if os.environ['update'].lower() == 'false':
             update = False
+            print(update)
     except KeyError:
         pass
     
@@ -40,6 +42,10 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
     
+    #if archive main.archive()
+    #run setup sql
+    #do downloaded queue or maybe just pdf-kit everything
+    #remove kafka stuff
     if update:
         main.update(subreddit, batch_size=100, credentials=credentials)
     
@@ -50,13 +56,12 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         "aws_region": aws_region
         }
     
-    if not debug:
-        try:
-            s3_client = boto3.client('s3')
-            s3_client.get_object(Bucket=destinations['bucket'], Key='place.txt')
-        except s3_client.exceptions.NoSuchKey:
-            with open("place.txt", 'w') as f:
-                f.write(str(0))
+    try:
+        s3_client = boto3.client('s3')
+        s3_client.get_object(Bucket=destinations['bucket'], Key='place.txt')
+    except s3_client.exceptions.NoSuchKey:
+        with open("place.txt", 'w') as f:
+            f.write(str(0))
         
     proj_path = ""
     place = int(open(proj_path + 'place.txt','r').read())
