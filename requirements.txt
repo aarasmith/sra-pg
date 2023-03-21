@@ -2,7 +2,9 @@ yt-dlp
 pdfkit
 pandas
 bs4
-retrying
+kafka-python
+kafka-logging-handler
 configparser
 psycopg2-binary
 boto3
+retrying
