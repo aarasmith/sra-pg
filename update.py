@@ -46,7 +46,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     #run setup sql
     #do downloaded queue or maybe just pdf-kit everything
     #remove kafka stuff
-    if update:
+    if update == True:
         main.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
