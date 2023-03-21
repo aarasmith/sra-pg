@@ -45,10 +45,10 @@ RUN set -x && \
     # Create /config directory
     mkdir -p /config && \
     #install archiver
-    git clone https://github.com/arshadrr/subreddit-archiver.git && \
-    cd subreddit-archiver && \
+    git clone https://github.com/aarasmith/sra-pg.git && \
+    cd sra-pg/subreddit-archiver && \
     python3 -m pip install --break-system-packages . && \
-    cd .. && \
+    cd ../.. && \
     python3 -m pip install --no-cache-dir --break-system-packages -r requirements.txt && \
     # Clean-up.
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
@@ -59,7 +59,7 @@ RUN set -x && \
     
 
 # # Copy init script, set workdir & entrypoint
-VOLUME /project
-WORKDIR /project
-# ENTRYPOINT ["python"]
-CMD ["bash"]
+VOLUME /sra-pg
+WORKDIR /sra-pg
+ENTRYPOINT ["python3","update.py"]
+#CMD ["bash"]
