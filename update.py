@@ -32,7 +32,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         pass
     try:
         if os.environ['update'].lower() == 'false':
-            debug = False
+            update = False
     except KeyError:
         pass
     
@@ -40,8 +40,8 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
     
-    #if update:
-    #    main.update(subreddit, batch_size=100, credentials=credentials)
+    if update:
+        main.update(subreddit, batch_size=100, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
