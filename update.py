@@ -55,6 +55,10 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
         "dynamo_table": f"{subreddit}-{environment}",
         "aws_region": aws_region
         }
+    try:
+        os.remove('place.txt')
+    except Exception:
+        pass
     
     try:
         s3_client = boto3.client('s3')
