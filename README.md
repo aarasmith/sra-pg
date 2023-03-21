@@ -24,7 +24,7 @@ lambda - 1) sqs->db 2) sqs->s3
 
 s3 bucket - 1 for vids 1 for json?
 
-Container registry & ECS
+Container registry & ECS - make sure if the OIDC Arn changes you update the secret
 
 
 # Planned/Maybe:
