@@ -46,7 +46,7 @@ RUN set -x && \
     mkdir -p /config && \
     #install archiver
     git clone https://github.com/aarasmith/sra-pg.git && \
-    cd sra-pg/subreddit-archiver && \
+    cd sra-pg/sra-pg-extension && \
     python3 -m pip install --break-system-packages . && \
     cd ../.. && \
     python3 -m pip install --no-cache-dir --break-system-packages -r requirements.txt && \
