@@ -7,7 +7,6 @@ from subreddit_archiver import states, serializer, db, progressbars
 
 def get_from_pushshift(url):
     request = requests.get(url)
-    print(request.json())
     if request.status_code in range(500, 600):
         print(f"\nUnable to connect to Pushshift.io, it appears to be down. HTTP {request.status_code}. Exiting.")
         exit(1)
@@ -19,13 +18,13 @@ def make_pushshift_url(subreddit, batch_size, post_utc, after):
     # the pushshift.io API is documented at https://github.com/pushshift/api
     url = "https://api.pushshift.io/reddit/search/submission/?"
     url += f"subreddit={subreddit}&size={batch_size}"
-    url += "&fields=id&sort=desc"
+    url += "&filter=id&order=desc"
 
     if post_utc != None:
         if after:
-            url += f"&after={int(post_utc)}"
+            url += f"&since={int(post_utc)}"
         else:
-            url += f"&before={int(post_utc)}"
+            url += f"&until={int(post_utc)}"
 
     return url
 
