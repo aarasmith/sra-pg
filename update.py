@@ -28,13 +28,11 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     try:
         if os.environ['debug'].lower() == 'true':
             debug = True
-            print(debug)
     except KeyError:
         pass
     try:
         if os.environ['update'].lower() == 'false':
             update = False
-            print(update)
     except KeyError:
         pass
     
