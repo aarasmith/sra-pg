@@ -9,6 +9,7 @@ from subreddit_archiver import states, serializer, db, progressbars
 def get_from_pushshift(url):
     request = requests.get(url)
     while request.status_code == 429:
+        print('getting rate limited')
         time.sleep(5)
         request = requests.get(url)
     if request.status_code in range(500, 600):
