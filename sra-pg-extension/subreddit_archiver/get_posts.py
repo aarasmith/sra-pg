@@ -27,12 +27,14 @@ def make_pushshift_url(subreddit, batch_size, post_utc, after):
     # the pushshift.io API is documented at https://github.com/pushshift/api
     url = "https://api.pushshift.io/reddit/search/submission/?"
     url += f"subreddit={subreddit}&size={batch_size}"
-    url += "&filter=id&order=desc"
+    #url += "&filter=id&order=desc"
 
     if post_utc != None:
         if after:
+            url += "&filter=id&order=asc"
             url += f"&since={int(post_utc)}"
         else:
+            url += "&filter=id&order=desc"
             url += f"&until={int(post_utc)}"
 
     return url
