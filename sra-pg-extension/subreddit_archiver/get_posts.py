@@ -11,7 +11,11 @@ def get_from_pushshift(url):
         print(f"\nUnable to connect to Pushshift.io, it appears to be down. HTTP {request.status_code}. Exiting.")
         exit(1)
 
-    data = request.json()['data']
+    try:
+        data = request.json()['data']
+    except Exception:
+        print(request.status_code)
+        exit(1)
     return data
 
 def make_pushshift_url(subreddit, batch_size, post_utc, after):
