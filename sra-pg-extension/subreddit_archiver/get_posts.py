@@ -90,9 +90,11 @@ def get_post_batch(reddit, subreddit, batch_size, post_utc, after):
     # To mitigate this, get post ids from pushshift.io and then fetch posts from
     # the reddit API using these post ids.
     post_ids = get_ids_from_pushshift(subreddit, batch_size, post_utc, after)
-    posts = map(reddit.submission, post_ids)
+    #posts = map(reddit.submission, post_ids)
+    post_ids_formatted = [f"t3_{post_id}" for post_id in post_ids]
+    posts = [post for post in reddit.info(fullnames=post_ids_formatted]
 
-    return list(posts)
+    return posts
 
 
 def process_post_batch(posts, db_connection):
