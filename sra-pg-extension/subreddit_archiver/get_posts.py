@@ -9,7 +9,6 @@ from subreddit_archiver import states, serializer, db, progressbars
 def get_from_pushshift(url):
     request = requests.get(url)
     while request.status_code == 429:
-        print('getting rate limited')
         time.sleep(5)
         request = requests.get(url)
     if request.status_code in range(500, 600):
@@ -116,7 +115,6 @@ def process_post_batch(posts, db_connection):
             except prawcore.exceptions.NotFound:
                 break
             except praw.exceptions.APIException:
-                print('getting praw limited')
                 time.sleep(1)
 
     # serialize the posts as serializer.Submission objects
