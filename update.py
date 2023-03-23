@@ -36,7 +36,7 @@ def main_function():
     except KeyError:
         update=True
     try:
-        batch_size=os.environ['batch_size']
+        batch_size=int(os.environ['batch_size'])
     except KeyError:
         batch_size = 100
     
