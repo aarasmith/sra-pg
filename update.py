@@ -28,10 +28,14 @@ def main_function():
     try:
         if os.environ['DEBUG_MODE'].lower() == 'true':
             debug = True
+        else:
+            debug = False
     except KeyError:
         debug=False
     try:
-        if os.environ['update'].lower() == 'false':
+        if os.environ['update'].lower() == 'true':
+            update = True
+        else:
             update = False
     except KeyError:
         update=True
@@ -40,7 +44,6 @@ def main_function():
     except KeyError:
         batch_size = 100
     
-    print(batch_size)
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
@@ -77,7 +80,7 @@ def main_function():
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 2")]
     cf_db.sort_values(by=["created_utc"], inplace=True, ascending=True)
     print(debug)
-    if debug == True:
+    if debug:
         cf_db = cf_db.head()
     
     vids.wrapper(cf_db, destinations)
