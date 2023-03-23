@@ -77,7 +77,7 @@ def main_function():
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 2")]
     cf_db.sort_values(by=["created_utc"], inplace=True, ascending=True)
     
-    if debug:
+    if debug == True:
         cf_db = cf_db.head()
     
     vids.wrapper(cf_db, destinations)
