@@ -14,33 +14,33 @@ def main_function():
     #archive_logging.add_stdout(logger)
     
     try:
-        aws_region=os.environ['aws_region']
+        aws_region=os.environ['AWS_REGION']
     except KeyError:
         aws_region = 'us-east-1'
     try:
-        subreddit=os.environ['subreddit']
+        subreddit=os.environ['SUBREDDIT']
     except KeyError:
         subreddit = 'combatfootage'
     try:
-        environment=os.environ['environment']
+        environment=os.environ['ENVIRONMENT']
     except KeyError:
         environment = 'dev'
     try:
-        if os.environ['DEBUG_MODE'].lower() == 'true':
+        if os.environ['DEBUG'].lower() == 'true':
             debug = True
         else:
             debug = False
     except KeyError:
         debug=False
     try:
-        if os.environ['update'].lower() == 'true':
+        if os.environ['UPDATE'].lower() == 'true':
             update = True
         else:
             update = False
     except KeyError:
         update=True
     try:
-        batch_size=int(os.environ['batch_size'])
+        batch_size=int(os.environ['BATCH_SIZE'])
     except KeyError:
         batch_size = 100
     
