@@ -9,32 +9,36 @@ from subreddit_archiver import main
 import os
 
 
-def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environment = 'dev', debug=False, update=True):
+def main_function():
     #logger = archive_logging.create_kafka_logger(topic_name = 'archive_log')
     #archive_logging.add_stdout(logger)
     
     try:
         aws_region=os.environ['aws_region']
     except KeyError:
-        pass
+        aws_region = 'us-east-1'
     try:
         subreddit=os.environ['subreddit']
     except KeyError:
-        pass
+        subreddit = 'combatfootage'
     try:
         environment=os.environ['environment']
     except KeyError:
-        pass
+        environment = 'dev'
     try:
         if os.environ['debug'].lower() == 'true':
             debug = True
     except KeyError:
-        pass
+        debug=False
     try:
         if os.environ['update'].lower() == 'false':
             update = False
     except KeyError:
-        pass
+        update=True
+    try:
+        batch_size=os.environ['batch_size']
+    except KeyError:
+        batch_size = 100
     
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
@@ -45,7 +49,7 @@ def main_function(aws_region = 'us-east-1', subreddit = 'combatfootage', environ
     #do downloaded queue or maybe just pdf-kit everything
     #remove kafka stuff
     if update == True:
-        main.update(subreddit, batch_size=100, credentials=credentials)
+        main.update(subreddit, batch_size=batch_size, credentials=credentials)
     
     destinations = {
         "bucket": f"{subreddit}-{environment}",
