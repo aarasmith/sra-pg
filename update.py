@@ -40,6 +40,7 @@ def main_function():
     except KeyError:
         batch_size = 100
     
+    print(batch_size)
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
     credentials = json.loads(client.get_secret_value(SecretId=secret_id)['SecretString'])
