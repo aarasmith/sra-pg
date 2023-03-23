@@ -52,7 +52,7 @@ def main_function():
     #run setup sql
     #do downloaded queue or maybe just pdf-kit everything
     #remove kafka stuff
-    if update == True:
+    if update:
         main.update(subreddit, batch_size=batch_size, credentials=credentials)
     
     destinations = {
@@ -79,7 +79,7 @@ def main_function():
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 8")]
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 2")]
     cf_db.sort_values(by=["created_utc"], inplace=True, ascending=True)
-    print(debug)
+    
     if debug:
         cf_db = cf_db.head()
     
