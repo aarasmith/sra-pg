@@ -116,6 +116,7 @@ def process_post_batch(posts, db_connection):
             except prawcore.exceptions.NotFound:
                 break
             except praw.exceptions.APIException:
+                print('getting praw limited')
                 time.sleep(1)
 
     # serialize the posts as serializer.Submission objects
