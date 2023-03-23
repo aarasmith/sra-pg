@@ -26,7 +26,7 @@ def main_function():
     except KeyError:
         environment = 'dev'
     try:
-        if os.environ['debug'].lower() == 'true':
+        if os.environ['DEBUG_MODE'].lower() == 'true':
             debug = True
     except KeyError:
         debug=False
@@ -76,7 +76,7 @@ def main_function():
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 8")]
     cf_db = cf_db.loc[~cf_db.link_flair_text.str.contains("Rule 2")]
     cf_db.sort_values(by=["created_utc"], inplace=True, ascending=True)
-    
+    print(debug)
     if debug == True:
         cf_db = cf_db.head()
     
