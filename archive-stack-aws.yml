@@ -344,6 +344,91 @@ Resources:
       TopicArn: !Ref SNSLogs
       RawMessageDelivery: "true"
 
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    DependsOn: ECSExecutionRole
+    Properties:
+      ClusterName: !Join ["-", ["sra", !Ref Subreddit, !Ref EnvironmentType]]
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
+  
+  ECSTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        -
+          Name: !Join ["-", ["sra", !Ref Subreddit, "update", !Ref EnvironmentType]]
+          Image: !Join ["", [!Ref AWS::AccountId, ".dkr.ecr.", !Ref AWS::Region, ".amazonaws.com/", !Ref ImageRepo, ":latest"]]
+          Cpu: 0
+          PortMappings:
+            -
+              ContainerPort: 80
+              HostPort: 80
+              Protocol: "tcp"
+              AppProtocol: "http"
+          Essential: true
+          Environment:
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: SUBREDDIT
+              Value: !Ref Subreddit
+            - Name: ENVIRONMENT
+              Value: !Ref EnvironmentType
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: true
+              awslogs-group: !Join ["-", ["/ecs/sra", !Ref Subreddit, "update", !Ref EnvironmentType]]
+              awslogs-region: us-east-1
+              awslogs-stream-prefix: ecs
+      Family: !Join ["-", ["sra", !Ref Subreddit, "update", !Ref EnvironmentType]]
+      TaskRoleArn: !GetAtt EC2Role.Arn
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      RequiresCompatibilities:
+        - "FARGATE"
+      Cpu: 512
+      Memory: 1024
+      NetworkMode: "awsvpc"
+      RuntimePlatform:
+        CpuArchitecture: "X86_64"
+        OperatingSystemFamily: "LINUX"
+
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  ECSExecutionPolicyExtension:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ["-", ["sra", "ecs-extension", !Ref EnvironmentType]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - "logs:CreateLogGroup"
+            Resource: "*"
+      Roles:
+      - !Ref ECSExecutionRole
 
   EC2Role:
     Type: AWS::IAM::Role
