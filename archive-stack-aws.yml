@@ -2,6 +2,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Stack for the subreddit archiver
 
 Parameters:
+  SubnetA:
+    Type: AWS::EC2::Subnet::Id
+  SubnetB:
+    Type: AWS::EC2::Subnet::Id
   Repo:
     Description: the project github repo
     Type: String
@@ -429,6 +433,68 @@ Resources:
             Resource: "*"
       Roles:
       - !Ref ECSExecutionRole
+
+  ECSEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "events.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub sra-ECSEventsPolicy-${EnvironmentType}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:RunTask
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - '*'
+                Condition:
+                  StringLike:
+                    iam:PassedToService: ecs-tasks.amazonaws.com
+              - Effect: Allow
+                Action: ecs:TagResource
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ecs:CreateAction:
+                      - RunTask
+
+  ECSScheduleUpdate:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Schedule the archive update"
+      Name: !Sub sra-${Subreddit}-update-${EnvironmentType}
+      State: DISABLED
+      RoleArn: !GetAtt ECSEventRole.Arn
+      ScheduleExpression: rate(1 day)
+      Targets:
+        - Arn: !GetAtt ECSCluster.Arn
+          RoleArn: !GetAtt ECSExecutionRole.Arn
+          Id: !Sub sra-${Subreddit}-update-${EnvironmentType}
+          EcsParameters:
+            TaskDefinitionArn: !Ref ECSTask
+            LaunchType: FARGATE
+            PlatformVersion: LATEST
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                AssignPublicIp: ENABLED
+                Subnets:
+                  - !Ref SubnetA
+                  - !Ref SubnetB
+
 
   EC2Role:
     Type: AWS::IAM::Role
