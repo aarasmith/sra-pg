@@ -35,7 +35,7 @@ def download_videos(entry, destinations, save_path, logger):
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         s3_handlers.move_to_s3(file_path=f"{file_name}.mp4", bucket=destinations['bucket'], prefix='videos/' + time.strftime('%Y-%m-%d'))
-        os.remove(f"{file_name}.mp4")
+        #os.remove(f"{file_name}.mp4")
         
         info_json = glob.glob(f"{file_name}*.json")[0]
         s3_handlers.move_to_s3(file_path=info_json, bucket=destinations['bucket'], prefix='json/' + time.strftime('%Y-%m-%d'))
@@ -43,8 +43,10 @@ def download_videos(entry, destinations, save_path, logger):
             json_metadata = json.load(f, parse_float=decimal.Decimal)
         metadata_item = {"pk":str(entry.id), "created_utc":int(entry.created_utc), "metadata":dict(json_metadata)}
         s3_handlers.insert_to_dynamodb(json_item=metadata_item, table_name=destinations['dynamo_table'], region = destinations['aws_region'])
-        os.remove(info_json)
-        
+        #os.remove(info_json)
+        files = glob.glob('downloads/*')
+        for file in files:
+            os.remove(file)
         #processed = "Y"
         #cursor.execute("INSERT INTO downloaded VALUES (%s) ON CONFLICT (id) DO NOTHING", (entry.id,))
         #con.commit()
