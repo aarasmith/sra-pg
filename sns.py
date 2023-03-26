@@ -15,6 +15,7 @@ import re
 import datetime
 import json
 import socket
+import os
 
 
 class SNSHandler(logging.Handler):
@@ -91,6 +92,8 @@ class SNSHandler(logging.Handler):
                         # msg contains custom class object
                         # if there is no formatting in the logging call
                         value = str(value)
+                    if key == "name":
+                        value = str(os.environ['CURRENT_ID'])
                     rec[key] = "" if value is None else value
                 if key == "created":
                     # inspired by: cmanaha/python-elasticsearch-logger

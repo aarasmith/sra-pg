@@ -15,14 +15,14 @@ import json
 import archive_logging
 import s3_handlers
 
-def download_videos(entry, destinations, save_path):
+def download_videos(entry, destinations, save_path, logger):
     #iterate over all links and log yt-dlp output with the post id as the log identifier
     #non-yt-dlp errors should be the only logs that get logged at the INFO level. yt-dlp info gets sent to debug
     
     url = entry.url
     file_name = save_path + "downloads/" + entry.id
     #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = entry.id)
-    logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], region=destinations['aws_region'], logger_name = entry.id)
+    #logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], region=destinations['aws_region'], logger_name = entry.id)
     ydl_opts = {
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "outtmpl": f"{file_name}.mp4",
@@ -65,6 +65,7 @@ def download_videos(entry, destinations, save_path):
 def wrapper(links_df, destinations, save_path = ''):
     proj_path = ""
     #logger = archive_logging.create_kafka_logger(topic_name = subreddit, logger_name = "MAIN")
+    os.environ['CURRENT_ID'] = "MAIN"
     logger = archive_logging.create_sns_logger(topic_name = destinations['log_topic'], region=destinations['aws_region'], logger_name = "MAIN")
     if len(links_df) > 0:
         
@@ -72,14 +73,17 @@ def wrapper(links_df, destinations, save_path = ''):
         
         for i in list(range(0, len(links_df), 1)):
             entry = links_df.iloc[i]
+            os.environ['CURRENT_ID'] = str(entry.id)
             try:
-                download_videos(entry, destinations, save_path)
+                download_videos(entry, destinations, save_path, logger)
             except Exception:
                 pass
             finally:
                 s3_handlers.move_to_s3(file_path='place.txt', bucket=destinations['bucket'])
                 new_place = str(int(open(proj_path + 'place.txt','r').read()))
-                logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
+        
+        os.environ['CURRENT_ID'] = "MAIN"
+        logger.info(f"Downloaded from {old_place} to {new_place} at {time.time()}")
         
     else:
         logger.info("Log entry: No entries to download: {time.time()}")
