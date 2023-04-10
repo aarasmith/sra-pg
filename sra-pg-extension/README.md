@@ -1,5 +1,7 @@
 # subreddit-archiver
 
+This is a modified version of arshadrr's subreddit-archiver that uses a remote postgres database rather than a local SQLite database. As such these docs are stale. It is intended to be called from a python script and you will supply credentials as a dictionary containing the PostgreSQL connection details and the reddit api credentials
+
 This utility allows you to save subreddits as SQLite databases. Partial and
 complete archives can then be updates with newer posts submitted since the
 archival. Allows you to have your personal copy of a subreddit for safekeeping,
