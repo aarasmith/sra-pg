@@ -1,5 +1,9 @@
 # sra-pg
 
+![Diagram of project workflow](/docs/sra-pg_workflow.png?raw=true "Project Workflow")
+
+![Diagram of project roles and policies](/docs/sra-pg_roles_and_policies.png?raw=true "Project Roles and Policies")
+
 # Infrastructure requirements
 
 EC2 coderunner
