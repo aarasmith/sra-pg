@@ -1,6 +1,8 @@
 # sra-pg
 
-This project archives reddit posts from the desired subreddit (r/combatfootage in my case) and writes the data to a postgres database. It then reads all the link submissions and downloads all videos to S3. This is configured to run once every 24 hours using a docker container on Fargate. All of the infrastructure and setup, and deployment is automated using AWS CloudFormation. All authentication uses policies which are created according to the principle of least priviledges. My monthly bill for all this is about $2 in infrastructure and currently around $3 for 4 months worth of archived videos in S3 standard-tier.
+This project archives reddit posts from the desired subreddit (r/combatfootage in my case) and writes the data to a postgres database. It then reads all the link submissions and downloads all videos to S3. This is configured to run update workflows once every 24 hours using a docker container on Fargate.
+
+All of the infrastructure and setup, and deployment is automated using AWS CloudFormation. Initial setup of the database and archive is achieved by a bootstrap shell script executed by an EC2 instance that is terminated upon build success. All authentication uses custom AWS roles/policies which are created according to the principle of least priviledges. My monthly bill for all this is about $2 in infrastructure and currently around $3 for 4 months worth of archived videos in S3 standard-tier.
 
 # Project Workflow
 
