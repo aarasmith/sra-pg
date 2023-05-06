@@ -61,5 +61,5 @@ RUN set -x && \
 # # Copy init script, set workdir & entrypoint
 VOLUME /sra-pg
 WORKDIR /sra-pg
-ENTRYPOINT ["python3","update.py"]
+ENTRYPOINT ["python3","./lib/update.py"]
 #CMD ["bash"]

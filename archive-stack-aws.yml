@@ -67,14 +67,17 @@ Mappings:
       InstanceType: t2.nano
       BackupRetentionPeriod: 0
       DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+      ECSScheduleState: DISABLED
     test:
       InstanceType: t2.micro
       BackupRetentionPeriod: 0
       DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+      ECSScheduleState: DISABLED
     prod:
       InstanceType: t2.small
       BackupRetentionPeriod: 7
       DBSnapshotIdentifier: arn:aws:rds:us-east-1:178511640259:snapshot:archive-test
+      ECSScheduleState: ENABLED
 
 Conditions:
   prod_cond: !Equals
@@ -96,6 +99,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SshOnlySg
       IamInstanceProfile: !Ref EC2InstanceProfile
+      InstanceInitiatedShutdownBehavior: terminate
       Tags:
         - Key: Name
           Value: !Join ["-", [sra, !Ref EnvironmentType]]
@@ -138,6 +142,8 @@ Resources:
               apt-get install -y build-essential python3-pip
               pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
               /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource CodeRunner --region ${AWS::Region}
+              sleep 30
+              /sbin/shutdown -h now
 
   #should be shared resource
   Psycopg2Layer:
@@ -477,7 +483,7 @@ Resources:
     Properties:
       Description: "Schedule the archive update"
       Name: !Sub sra-${Subreddit}-update-${EnvironmentType}
-      State: DISABLED
+      State: !FindInMap [EnvironmentMap, !Ref EnvironmentType, ECSScheduleState]
       RoleArn: !GetAtt ECSEventRole.Arn
       ScheduleExpression: rate(1 day)
       Targets:
