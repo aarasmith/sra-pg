@@ -88,12 +88,14 @@ def get_post_batch(reddit, subreddit, batch_size, post_utc, after):
     # Each subreddit's 'new' page only allows to go back 1000 posts in the past.
     # To mitigate this, get post ids from pushshift.io and then fetch posts from
     # the reddit API using these post ids.
-    post_ids = get_ids_from_pushshift(subreddit, batch_size, post_utc, after)
+    #post_ids = get_ids_from_pushshift(subreddit, batch_size, post_utc, after)
     #posts = map(reddit.submission, post_ids)
-    post_ids_formatted = [f"t3_{post_id}" for post_id in post_ids]
-    posts = [post for post in reddit.info(fullnames=post_ids_formatted)]
+    #post_ids_formatted = [f"t3_{post_id}" for post_id in post_ids]
+    #posts = [post for post in reddit.info(fullnames=post_ids_formatted)]
+    posts = [post for post in reddit.subreddit(subreddit).new()]
+    new_posts = [post for post in posts if post_utc < post.created_utc]
 
-    return posts
+    return new_posts
 
 
 def process_post_batch(posts, db_connection):
