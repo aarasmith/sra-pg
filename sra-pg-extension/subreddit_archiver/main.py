@@ -55,6 +55,7 @@ def update(out_file, batch_size, credentials):
         exit(1)
 
     get_posts.update_posts(reddit, db_connection, batch_size)
+    print('done updating')
 
 def main():
     args = cli.get_arg_parser().parse_args()

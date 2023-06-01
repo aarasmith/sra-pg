@@ -176,11 +176,11 @@ def update_posts(reddit, db_connection, batch_size):
     state = states.State(db_connection)
     newest_post_utc = state.get_most_recent_post_utc()
     subreddit = state.get_subreddit()
-    progressbar = progressbars.UpdateProgressbar(newest_post_utc)
+    #progressbar = progressbars.UpdateProgressbar(newest_post_utc)
 
     posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
     process_post_batch(posts, db_connection)
-    progressbar.tick(newest_post_utc, len(posts))
+    #progressbar.tick(newest_post_utc, len(posts))
 
     #while posts:
         #process_post_batch(posts, db_connection)
@@ -201,4 +201,4 @@ def update_posts(reddit, db_connection, batch_size):
 
         #posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
 
-    progressbar.done()
+    #progressbar.done()
