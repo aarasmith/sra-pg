@@ -179,24 +179,26 @@ def update_posts(reddit, db_connection, batch_size):
     progressbar = progressbars.UpdateProgressbar(newest_post_utc)
 
     posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
+    process_post_batch(posts, db_connection)
+    progressbar.tick(newest_post_utc, len(posts))
 
-    while posts:
-        process_post_batch(posts, db_connection)
+    #while posts:
+        #process_post_batch(posts, db_connection)
 
         # the since paramater in the endpoint we're using is inclusive and
         # so repeatedly returns the most recent post when we try to query posts
         # newer than it. make up for this.
-        possible_newest_post_utc = get_created_utc(posts[-1])
-        if possible_newest_post_utc == newest_post_utc:
-            break
-        else:
-            newest_post_utc = possible_newest_post_utc
+        #possible_newest_post_utc = get_created_utc(posts[-1])
+        #if possible_newest_post_utc == newest_post_utc:
+        #    break
+        #else:
+        #    newest_post_utc = possible_newest_post_utc
         # set the newest post in the database to be the newest from the batch of
         # posts just saved
-        state.set_most_recent_post_utc(newest_post_utc)
+        #state.set_most_recent_post_utc(newest_post_utc)
         # update the progress bar
-        progressbar.tick(newest_post_utc, len(posts))
+        #progressbar.tick(newest_post_utc, len(posts))
 
-        posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
+        #posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
 
     progressbar.done()
