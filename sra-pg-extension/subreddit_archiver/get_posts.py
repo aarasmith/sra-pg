@@ -102,22 +102,22 @@ def process_post_batch(posts, db_connection):
     # shallow copy to not mutate what's passed to this function
     # posts that may or may not exist on reddit (they could have been removed
     # but remain on pusshift)
-    unchecked_posts = posts[::]
-    # array that will only contain posts that exist.
-    posts = []
-
-    # get all the comments for each post
-    for post in unchecked_posts:
-        while True:
-            try:
-                post.comments.replace_more(limit=None)
-                posts.append(post)
-                break
-            # some posts that are on pushshift are removed on reddit and 404.
-            except prawcore.exceptions.NotFound:
-                break
-            except praw.exceptions.APIException:
-                time.sleep(1)
+    # unchecked_posts = posts[::]
+    # # array that will only contain posts that exist.
+    # posts = []
+    print(len(posts))
+    # # get all the comments for each post
+    # for post in unchecked_posts:
+    #     while True:
+    #         try:
+    #             post.comments.replace_more(limit=None)
+    #             posts.append(post)
+    #             break
+    #         # some posts that are on pushshift are removed on reddit and 404.
+    #         except prawcore.exceptions.NotFound:
+    #             break
+    #         except praw.exceptions.APIException:
+    #             time.sleep(1)
 
     # serialize the posts as serializer.Submission objects
     posts_serialized = map(serializer.Submission, posts)
