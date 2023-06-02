@@ -130,7 +130,10 @@ def process_post_batch(posts, db_connection):
 
     # insert posts and comments into the database
     db.insert_posts(db_connection, posts_serialized)
+    print('posts inserted')
     db.insert_comments(db_connection, comments_serialized)
+    print('comments inserted')
+    return
 
 
 def archive_posts(reddit, db_connection, batch_size):
@@ -179,6 +182,9 @@ def update_posts(reddit, db_connection, batch_size):
     progressbar = progressbars.UpdateProgressbar(newest_post_utc)
 
     posts = get_post_batch(reddit, subreddit, batch_size, newest_post_utc, True)
+    print('posts received')
     process_post_batch(posts, db_connection)
+    print('posts processed')
     progressbar.tick(newest_post_utc, len(posts))
     progressbar.done()
+    return
