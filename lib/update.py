@@ -12,37 +12,19 @@ import os
 def main_function():
     #logger = archive_logging.create_kafka_logger(topic_name = 'archive_log')
     #archive_logging.add_stdout(logger)
-    
-    try:
-        aws_region=os.environ['AWS_REGION']
-    except KeyError:
-        aws_region = 'us-east-1'
-    try:
-        subreddit=os.environ['SUBREDDIT']
-    except KeyError:
-        subreddit = 'combatfootage'
-    try:
-        environment=os.environ['ENVIRONMENT']
-    except KeyError:
-        environment = 'dev'
-    try:
-        if os.environ['DEBUG'].lower() == 'true':
-            debug = True
-        else:
-            debug = False
-    except KeyError:
-        debug=False
-    try:
-        if os.environ['UPDATE'].lower() == 'true':
-            update = True
-        else:
-            update = False
-    except KeyError:
-        update=True
-    try:
-        batch_size=int(os.environ['BATCH_SIZE'])
-    except KeyError:
-        batch_size = 100
+
+    aws_region=os.environ.get('AWS_REGION', 'us-east-1')
+    subreddit=os.environ.get('SUBREDDIT', 'combatfootage')
+    environment=os.environ.get('ENVIRONMENT', 'dev')
+    if os.environ.get('DEBUG', 'false').lower() == 'true':
+        debug = True
+    else:
+        debug = False
+    if os.environ.get('UPDATE', 'true').lower() == 'true':
+        update = True
+    else:
+        update = False
+    batch_size=int(os.environ.get('BATCH_SIZE', 100))
     
     secret_id = f"sra/shared/{environment}"
     client = boto3.client('secretsmanager', region_name = aws_region)
